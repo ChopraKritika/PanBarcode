@@ -1,0 +1,1506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PanBarcode · Diagnostic DNA barcodes for closely related microbes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6F1; --surface:#FFFFFF; --soft:#E3EADD; --line:#CFD8C9;
+  --ink:#1F2A23; --muted:#5F6B63; --sage:#4A5D4E; --moss:#8FA387; --clay:#B9774E; --clay-soft:#F1DFD1;
+  --s1:#B9774E; --s2:#D9A27A; --s3:#4A5D4E; --s4:#7E9A86; --s5:#A7B4A0;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16201A; --surface:#1E2A23; --soft:#26342B; --line:#33453A;
+    --ink:#E8EEE8; --muted:#A3B0A6; --sage:#9CB8A2; --moss:#7E9A86; --clay:#D9965F; --clay-soft:#3A2C22;
+    --s1:#D9965F; --s2:#E8B892; --s3:#9CB8A2; --s4:#6F8C78; --s5:#55695B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16201A; --surface:#1E2A23; --soft:#26342B; --line:#33453A;
+  --ink:#E8EEE8; --muted:#A3B0A6; --sage:#9CB8A2; --moss:#7E9A86; --clay:#D9965F; --clay-soft:#3A2C22;
+  --s1:#D9965F; --s2:#E8B892; --s3:#9CB8A2; --s4:#6F8C78; --s5:#55695B;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,"Segoe UI",sans-serif;font-size:18px;line-height:1.55;font-optical-sizing:auto;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--clay);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+h1,h2,h3{font-weight:700;letter-spacing:-0.02em;line-height:1.05;margin:0}
+p{margin:0}
+.lead{color:var(--muted);max-width:56ch}
+
+/* ---------- hero ---------- */
+.hero{padding:56px 0 28px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
+.brand svg{width:30px;height:30px}
+.hero h1{font-size:clamp(44px,7.4vw,96px);font-weight:760;margin-top:44px;max-width:12ch}
+.hero .lead{font-size:clamp(18px,2vw,22px);margin-top:20px}
+.graph-card{margin-top:40px;background:var(--surface);border-radius:28px;padding:18px 18px 10px;position:relative}
+.graph-card svg{width:100%;height:auto;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:10px 6px 8px}
+.chip{border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:6px 14px 6px 10px;font:inherit;font-size:15px;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.chip i{width:14px;height:14px;border-radius:50%;display:inline-block}
+.chip[aria-pressed="true"]{border-color:var(--ink)}
+.hint{color:var(--muted);font-size:14px;padding:0 8px 10px}
+.strand{fill:none;stroke-width:6;stroke-linecap:round;transition:opacity .35s}
+.graph-card.focus .strand{opacity:.12}
+.graph-card.focus .strand.on{opacity:1}
+.anchor{fill:var(--ink)}
+.anchor-label,.bc-label{font-family:inherit;font-size:15px;fill:var(--muted)}
+.bc-zone{fill:var(--clay-soft)}
+.bc-label{fill:var(--clay);font-weight:700}
+@media (prefers-reduced-motion: no-preference){
+  .draw .strand{stroke-dasharray:1400;stroke-dashoffset:1400;animation:draw 1.8s cubic-bezier(.6,.1,.2,1) forwards}
+  .draw .strand:nth-child(2){animation-delay:.08s}.draw .strand:nth-child(3){animation-delay:.16s}
+  .draw .strand:nth-child(4){animation-delay:.24s}.draw .strand:nth-child(5){animation-delay:.32s}
+  .draw .late{opacity:0;animation:fade .6s ease 1.7s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @keyframes fade{to{opacity:1}}
+}
+
+/* ---------- sections ---------- */
+section{padding:88px 0}
+.sec-title{font-size:clamp(32px,4.6vw,56px);max-width:18ch}
+.sec-sub{margin-top:14px}
+
+/* questions */
+.questions{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.q{background:var(--surface);border-radius:22px;padding:24px}
+.q b{display:block;font-size:24px;letter-spacing:-0.01em}
+.q span{color:var(--muted);font-size:16px;display:block;margin-top:8px}
+.q.target{background:var(--clay-soft)}
+.q.target b{color:var(--clay)}
+
+/* how it works (scrolly) */
+.how{display:grid;grid-template-columns:1.25fr 1fr;gap:48px;margin-top:44px;align-items:start}
+.how .stage{position:sticky;top:calc(24px + env(safe-area-inset-top,0px));background:var(--surface);border-radius:28px;padding:16px}
+.how .stage svg{width:100%;height:auto;display:block}
+.steps{display:flex;flex-direction:column;gap:38vh;padding:12vh 0 22vh}
+.step{opacity:.35;transition:opacity .4s}
+.step.active{opacity:1}
+.step .n{width:36px;height:36px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700;font-size:16px}
+.step.active .n{background:var(--ink);color:var(--bg)}
+.step h3{font-size:30px;margin-top:14px}
+.step p{color:var(--muted);margin-top:10px;max-width:34ch}
+.stage .anchor,.stage .bc-zone,.stage .bc-label,.stage .primer,.stage .anchor-label{transition:opacity .45s}
+.stage .strand{transition:opacity .45s, stroke-width .45s}
+.st1 .anchor,.st1 .anchor-label,.st1 .bc-zone,.st1 .bc-label,.st1 .primer{opacity:0}
+.st2 .bc-zone,.st2 .bc-label,.st2 .primer{opacity:0}
+.st3 .bc-label,.st3 .primer{opacity:0}
+.st3 .bc-zone{opacity:.35}
+.st4 .strand:not(.tgt){opacity:.35}
+.primer{fill:none;stroke:var(--clay);stroke-width:4;stroke-linecap:round}
+.primer-head{fill:var(--clay)}
+
+/* playground */
+.play{background:var(--surface);border-radius:32px;padding:36px;margin-top:40px}
+.controls{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end}
+.ctl label{display:block;font-size:15px;color:var(--muted);margin-bottom:8px}
+.seg{display:inline-flex;background:var(--soft);border-radius:999px;padding:4px}
+.seg button{border:0;background:transparent;font:inherit;font-size:16px;padding:9px 18px;border-radius:999px;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.funnel{margin-top:34px;display:flex;flex-direction:column;gap:14px}
+.row{display:grid;grid-template-columns:170px 1fr 92px;gap:16px;align-items:center}
+.row .name{font-size:16px;color:var(--muted)}
+.bar{height:34px;background:var(--soft);border-radius:10px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--sage);border-radius:10px;transition:width .7s cubic-bezier(.3,.7,.2,1)}
+.row.last .bar span{background:var(--clay)}
+.row .val{font-weight:700;font-size:20px;text-align:right;font-variant-numeric:tabular-nums}
+.insight{margin-top:26px;font-size:20px;max-width:60ch}
+.note{margin-top:10px;color:var(--muted);font-size:14px}
+
+/* results */
+.results{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px;align-items:center}
+.facts{display:flex;flex-direction:column;gap:22px}
+.fact b{font-size:clamp(28px,3.4vw,40px);display:block;letter-spacing:-0.02em;line-height:1.1}
+.fact span{color:var(--muted)}
+.compare{background:var(--surface);border-radius:28px;padding:22px}
+.compare svg{width:100%;height:auto;display:block}
+.dot{transition:transform .8s cubic-bezier(.3,.7,.2,1)}
+@media (prefers-reduced-motion: reduce){.dot,.bar span{transition:none}}
+.cap{margin-top:12px;min-height:52px}
+.legend{display:flex;gap:18px;color:var(--muted);font-size:14px;margin-top:6px}
+.legend .sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.races{margin-top:56px;margin-bottom:8px;background:var(--surface);border-radius:28px;padding:26px 30px;display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+.races p{max-width:48ch}
+.race-pills{display:flex;gap:10px;flex-wrap:wrap}
+.race-pills span{padding:8px 14px;border-radius:999px;font-size:15px;color:#fff}
+
+/* library */
+.lib{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.card{background:var(--surface);border-radius:22px;padding:24px;min-height:170px;display:flex;flex-direction:column}
+.card h3{font-size:22px}
+.card .host{color:var(--muted);font-size:15px;margin-top:4px}
+.card dl{margin:16px 0 0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px}
+.card dt{color:var(--muted)} .card dd{margin:0;font-weight:600}
+.card .tag{margin-top:auto;padding-top:14px;font-size:13px;color:var(--clay)}
+.card.soon{background:transparent;border:1.5px dashed var(--line);justify-content:center}
+.card.soon p{color:var(--muted);font-size:15px;margin-top:6px}
+
+/* limits + footer */
+.limits{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
+.limits div{border-top:2px solid var(--ink);padding-top:14px}
+.limits b{display:block;font-size:19px}
+.limits span{color:var(--muted);font-size:16px}
+footer{padding:56px 0 64px;color:var(--muted);font-size:15px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+
+/* ---------- intro film ---------- */
+.film{padding:40px 0 24px}
+.film h2{font-size:clamp(28px,3.6vw,44px)}
+.player{margin-top:22px;background:var(--surface);border-radius:28px;overflow:hidden}
+.screen{position:relative;aspect-ratio:16/9;background:var(--bg)}
+.screen svg{position:absolute;inset:0;width:100%;height:100%}
+.caption{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);max-width:86%;background:var(--surface);color:var(--ink);padding:10px 18px;border-radius:14px;font-size:clamp(14px,1.8vw,21px);text-align:center;line-height:1.35}
+.bigplay{position:absolute;inset:0;display:grid;place-items:center;background:transparent;border:0;cursor:pointer}
+.bigplay span{width:84px;height:84px;border-radius:50%;background:var(--ink);display:grid;place-items:center}
+.bigplay svg{position:static;width:30px;height:30px}
+.bar2{display:flex;align-items:center;gap:14px;padding:14px 18px}
+.pp{width:44px;height:44px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);display:grid;place-items:center;cursor:pointer;flex:none}
+.pp svg{width:16px;height:16px}
+.track{flex:1;display:flex;gap:4px;align-items:center}
+.chap{flex:1;height:30px;border:0;background:transparent;padding:0;cursor:pointer;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.chap i{display:block;height:6px;border-radius:3px;background:var(--soft);overflow:hidden;position:relative}
+.chap i b{position:absolute;inset:0;width:0;background:var(--clay)}
+.chap span{font-size:12px;color:var(--muted);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.time{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+@media (max-width:700px){.chap span{display:none}}
+
+@media (max-width:860px){
+  .questions,.lib,.limits{grid-template-columns:1fr}
+  .how{grid-template-columns:1fr}
+  .how .stage{top:calc(8px + env(safe-area-inset-top,0px))}
+  .steps{gap:46vh}
+  .results{grid-template-columns:1fr}
+  .row{grid-template-columns:110px 1fr 70px}
+  .play{padding:24px}
+}
+/* ===== helix landing ===== */
+/* Landing is a dark 3D scene. Flat background colour; all glow comes from the WebGL render. */
+html,body{height:100%}
+body.helix{
+  overflow:hidden;background:#040D08;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+  --hx-ink:#F3F1E6; --hx-muted:rgba(236,228,200,.70); --hx-cyan:#F2C14E; --hx-blue:#2FAE6E; --hx-gold:#F2C14E; --hx-green:#2FAE6E;
+  --hx-glass:rgba(4,14,9,.55); --hx-edge:rgba(242,214,140,.22);
+}
+#helix{position:absolute;inset:0;width:100%;height:100%;display:block;transition:opacity .5s var(--ease), filter .5s var(--ease)}
+body.open #helix{opacity:.3;filter:blur(4px)}
+.head{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);padding:32px;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;z-index:3;pointer-events:none;transition:opacity .4s var(--ease)}
+.head h1{margin:0;font-size:48px;line-height:48px;letter-spacing:-0.025em;font-weight:600;max-width:680px;text-wrap:balance;
+  background:linear-gradient(90deg,#FFF8E7,#D8C38A);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:4px}
+.head p{margin:12px 0 0;color:var(--hx-muted);font-size:18px;line-height:28px;max-width:680px;text-wrap:pretty}
+.brandmark{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:16px;line-height:24px;color:var(--hx-ink);
+  padding:8px 12px;border-radius:9999px;background:var(--hx-glass);border:1px solid var(--hx-edge);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.brandmark i{width:8px;height:8px;border-radius:50%;background:var(--hx-cyan);box-shadow:0 0 12px var(--hx-cyan)}
+.helix .hint{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);color:var(--hx-muted);font-size:14px;line-height:20px;margin:0;padding:0;transition:opacity .4s var(--ease);z-index:3;white-space:nowrap}
+
+/* labels that ride inside the travelling loops */
+.float-labels{position:absolute;inset:0;z-index:2;pointer-events:none;perspective:800px;transition:opacity .4s var(--ease)}
+body.open .float-labels{opacity:0}
+body.open .float-labels .loop-btn{pointer-events:none}
+.loop-btn{
+  position:absolute;left:0;top:0;pointer-events:auto;cursor:pointer;will-change:transform,opacity;
+  display:inline-flex;align-items:center;gap:8px;padding:8px 16px 8px 8px;border-radius:9999px;
+  font:inherit;font-size:16px;line-height:24px;font-weight:600;color:var(--hx-ink);white-space:nowrap;
+  background:var(--hx-glass);border:1px solid var(--hx-edge);
+  -webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);
+  box-shadow:0 0 0 1px rgba(242,193,78,.04),0 12px 32px rgba(0,0,0,.45);
+  transition:border-color .3s var(--ease), background-color .3s var(--ease), box-shadow .3s var(--ease);
+}
+.loop-btn .n{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:16px;font-weight:600;color:var(--hx-cyan);
+  padding:4px 8px;border-radius:9999px;background:rgba(242,193,78,.12)}
+.loop-btn .s{position:absolute;left:50%;top:calc(100% + 8px);transform:translate(-50%,-4px);opacity:0;pointer-events:none;
+  font-size:12px;line-height:16px;font-weight:500;color:var(--hx-ink);white-space:nowrap;padding:4px 8px;border-radius:9999px;
+  background:var(--hx-glass);border:1px solid var(--hx-edge);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  transition:opacity .3s var(--ease), transform .5s var(--ease)}
+.loop-btn:hover,.loop-btn:focus-visible{border-color:rgba(242,193,78,.65);background:rgba(6,20,13,.75);
+  box-shadow:0 0 0 4px rgba(242,193,78,.12),0 0 36px rgba(242,193,78,.35),0 12px 32px rgba(0,0,0,.45)}
+.loop-btn:hover .s,.loop-btn:focus-visible .s{opacity:1;transform:translate(-50%,0)}
+.loop-btn:focus-visible{outline:2px solid var(--hx-cyan);outline-offset:4px}
+
+/* keyboard and no-WebGL access: a plain row of the same sections, hidden until focused */
+.sr-nav{position:absolute;left:50%;bottom:calc(64px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:4;margin:0;padding:0;list-style:none;
+  display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:max-content;max-width:calc(100% - 32px)}
+.sr-nav:not(:focus-within){clip-path:inset(50%);height:1px;overflow:hidden;white-space:nowrap}
+.sr-nav .loop-btn{position:static}
+.no-webgl .sr-nav{clip-path:none;height:auto;overflow:visible;bottom:50%;transform:translate(-50%,50%)}
+.no-webgl .helix .hint{display:none}
+
+@media (max-width:760px){
+  .head{padding:24px 16px}
+  .head h1{font-size:30px;line-height:36px}
+  .head p{font-size:16px;line-height:24px}
+  .brandmark,.helix .hint{display:none}
+  .loop-btn{font-size:14px;line-height:20px;padding:8px 12px 8px 8px}
+  .loop-btn .s{display:none}
+}
+@media (prefers-reduced-motion: reduce){ .loop-btn,.loop-btn .s,#helix,.float-labels{transition:opacity .3s var(--ease)} }
+/* ===== sheet ===== */
+.sheet[hidden]{display:none!important}
+.sheet:not(.on){pointer-events:none}
+.sheet{position:fixed;left:50%;top:calc(24px + env(safe-area-inset-top,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,40px);width:min(1120px,calc(100% - 32px));background:var(--bg);border-radius:32px;box-shadow:0 30px 80px rgba(20,30,24,.18);display:flex;flex-direction:column;opacity:0;transition:opacity .4s,transform .45s cubic-bezier(.2,.7,.2,1);z-index:5}
+.sheet.on{opacity:1;transform:translate(-50%,0)}
+.sheet-top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding:28px 32px 14px}
+.kicker{color:var(--clay);font-weight:700;font-size:15px}
+.sheet-top h2{margin:4px 0 0;font-size:clamp(30px,4vw,52px);letter-spacing:-0.02em;line-height:1}
+.sheet-nav{display:flex;gap:8px}
+.nav-btn{width:46px;height:46px;border-radius:50%;border:0;background:var(--soft);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.nav-btn svg{width:18px;height:18px}
+.nav-btn.close{background:var(--ink);color:var(--bg)}
+.sheet-body{overflow-y:auto;padding:8px 32px 36px;flex:1}
+.sec{display:none}.sec.on{display:block}
+.sec .lead{margin-bottom:18px}
+.how2{display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:center}
+.how2 .stage{position:static}
+.how-text h3{font-size:30px;margin-top:18px}
+.how-text p{color:var(--muted);margin-top:10px}
+.stepbtns{display:flex;gap:8px}
+.stepbtns button{width:42px;height:42px;border-radius:50%;border:0;background:var(--soft);font:inherit;font-weight:700;color:var(--ink);cursor:pointer}
+.stepbtns button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.about{display:grid;grid-template-columns:180px 1fr;gap:32px;align-items:start}
+.avatar{width:180px;height:180px;border-radius:50%;background:var(--soft);display:grid;place-items:center;color:var(--muted)}
+.about-lead{font-size:clamp(22px,2.6vw,30px);line-height:1.3;letter-spacing:-0.01em;margin-bottom:14px}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.btn{display:inline-block;text-decoration:none;border:0;background:var(--ink);color:var(--bg);font:inherit;font-size:15px;padding:11px 18px;border-radius:999px;cursor:pointer}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.film{padding:0}
+.explain3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+.explain3 div{background:var(--surface);border-radius:20px;padding:18px 20px}
+.explain3 b{display:block;font-size:18px}.explain3 span{color:var(--muted);font-size:15px}
+.io{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-top:28px}
+.io-h{font-weight:700;color:var(--muted);font-size:15px;margin-bottom:10px}
+.io-card{background:var(--surface);border-radius:18px;padding:14px 18px;margin-bottom:10px}
+.io-card b{display:block;font-size:18px}.io-card span{color:var(--muted);font-size:15px}
+.io-card.hi{background:var(--clay-soft)}.io-card.hi b{color:var(--clay)}
+.io-arrow{color:var(--clay);width:60px}
+.chips2{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chips2 span{background:var(--soft);border-radius:999px;padding:8px 14px;font-size:15px}
+@media (max-width:760px){.explain3,.io{grid-template-columns:1fr}.io-arrow{transform:rotate(90deg);margin:0 auto}}
+@media (max-width:760px){.hint{display:none}.screen .caption{font-size:12px;bottom:3%;padding:6px 10px}.how2,.about{grid-template-columns:1fr}.sheet-top{padding:20px 20px 10px}.sheet-body{padding:6px 20px 28px}.avatar{width:120px;height:120px}}
+/* ===== panels themed to match the blue landing (applies in light and dark mode) ===== */
+body.helix{
+  --bg:#07160F; --surface:#0C2117; --soft:#12301F; --line:#1F4A33;
+  --ink:#F3F1E6; --muted:#A9BBAE; --sage:#2FAE6E; --moss:#3FC985; --clay:#F2C14E; --clay-soft:#2B2412;
+  --s1:#F2C14E; --s2:#F7DC8B; --s3:#2FAE6E; --s4:#6FE3A8; --s5:#5E7F6C;
+  color-scheme:dark;
+}
+.sheet{background:rgba(7,22,15,.86)!important;-webkit-backdrop-filter:blur(24px) saturate(140%);backdrop-filter:blur(24px) saturate(140%);
+  border:1px solid rgba(242,214,140,.18);box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 60px rgba(47,174,110,.12)!important}
+.sheet .kicker{letter-spacing:.06em;text-transform:uppercase;font-size:12px;line-height:16px}
+.sheet .q,.sheet .card,.sheet .compare,.sheet .play,.sheet .races,.sheet .explain3 div,.sheet .io-card,.sheet .player,.sheet .how .stage,.sheet .how2 .stage{border:1px solid var(--line)}
+.sheet .q.target,.sheet .io-card.hi{border-color:rgba(242,193,78,.35)}
+.nav-btn{transition:transform .3s cubic-bezier(0.22,1,0.36,1),background-color .3s cubic-bezier(0.22,1,0.36,1)}
+.nav-btn:hover{transform:translateY(-1px);background:var(--line)}
+.nav-btn.close:hover{background:#FFFFFF}
+.nav-btn:active{transform:scale(0.98)}
+.btn{transition:transform .3s cubic-bezier(0.22,1,0.36,1),opacity .3s cubic-bezier(0.22,1,0.36,1)}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:scale(0.98)}
+.seg button{transition:background-color .3s cubic-bezier(0.22,1,0.36,1),color .3s cubic-bezier(0.22,1,0.36,1)}
+.seg button[aria-pressed="true"]{box-shadow:0 0 16px rgba(242,193,78,.25)}
+.row.last .bar span{box-shadow:0 0 16px rgba(242,193,78,.45)}
+.sheet-body::-webkit-scrollbar{width:10px}.sheet-body::-webkit-scrollbar-thumb{background:var(--line);border-radius:9999px;border:3px solid transparent;background-clip:padding-box}
+
+/* intro: the scene fades in once the first frame is drawn */
+#helix{opacity:0}
+#helix.ready{opacity:1;transition:opacity 1.2s cubic-bezier(0.22,1,0.36,1), filter .5s cubic-bezier(0.22,1,0.36,1)}
+body.open #helix.ready{opacity:.3}
+@media (prefers-reduced-motion: reduce){#helix{opacity:1}}
+
+/* intro film, blue theme */
+.player{border:1px solid var(--line);box-shadow:0 0 40px rgba(47,174,110,.10)}
+.screen{background:#06140D}
+.caption{background:rgba(4,14,9,.72)!important;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(242,214,140,.18);color:var(--ink)!important}
+.caption .w{opacity:.38;transition:opacity .3s cubic-bezier(0.22,1,0.36,1)}
+.caption .w.on{opacity:1}
+.bigplay span{background:var(--clay)!important;box-shadow:0 0 0 10px rgba(242,193,78,.12),0 0 48px rgba(242,193,78,.55);transition:transform .5s cubic-bezier(0.22,1,0.36,1)}
+.bigplay:hover span{transform:scale(1.06)}
+.bigplay:active span{transform:scale(0.98)}
+.bigplay svg path{fill:#07160F}
+.bar2{border-top:1px solid var(--line)}
+.chap i b{box-shadow:0 0 10px rgba(242,193,78,.7)}
+.chap:hover i{background:var(--line)}
+.pp{transition:transform .3s cubic-bezier(0.22,1,0.36,1)}
+.pp:hover{transform:scale(1.05)}.pp:active{transform:scale(0.98)}
+.pp.voice{background:var(--soft);color:var(--ink)}
+.pp.voice[aria-pressed="true"]{color:var(--clay)}
+@media (prefers-reduced-motion: reduce){.caption .w{opacity:1}}
+@media (max-width:760px){
+  .screen{aspect-ratio:auto;display:flex;flex-direction:column}
+  .screen svg{position:relative;inset:auto;height:auto;aspect-ratio:16/9}
+  .screen .caption{position:static;transform:none;max-width:none;margin:8px 8px 0;font-size:14px;line-height:20px;padding:8px 12px;text-align:left}
+}
+/* how it works panel */
+.hw{display:grid;grid-template-columns:1.55fr 1fr;gap:32px;align-items:start}
+.hw-stage{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:0 0 48px rgba(47,174,110,.08)}
+.hw-stage svg{width:100%;height:auto;display:block;overflow:visible}
+.hw-top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:0 8px 8px;flex-wrap:wrap}
+.hw-tag{font-size:12px;line-height:16px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:9999px;padding:2px 8px}
+.hw-legend{display:flex;gap:16px;font-size:12px;line-height:16px;color:var(--muted)}
+.hw-legend span{display:inline-flex;align-items:center;gap:8px}
+.hw-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.hw-strand{fill:none;stroke-width:5;stroke-linecap:round;transition:opacity .5s cubic-bezier(0.22,1,0.36,1)}
+.hw-draw .hw-strand{stroke-dasharray:1;animation:hwDraw 1.6s cubic-bezier(0.22,1,0.36,1) both}
+.hw-draw .hw-strand:nth-child(2){animation-delay:.08s}.hw-draw .hw-strand:nth-child(3){animation-delay:.16s}
+.hw-draw .hw-strand:nth-child(4){animation-delay:.24s}.hw-draw .hw-strand:nth-child(5){animation-delay:.32s}
+@keyframes hwDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.hw-node{fill:var(--soft);stroke:var(--line);stroke-width:1.5}
+.hw-lbl{font-size:22px;fill:var(--muted);font-family:inherit}
+.hw-c{fill:#F2C14E;font-weight:600}
+.hw-dim{fill:var(--muted);opacity:.6}
+.hw-bc{font-size:26px;font-weight:700;fill:#F2C14E}
+.hw-brk{fill:none;stroke:var(--muted);stroke-width:1.5}
+.hw-primer{stroke:#F2C14E;stroke-width:4;stroke-linecap:round;fill:none}
+.hw-pulse{fill:none;stroke:#F3EBCF;stroke-width:2;transform-box:fill-box;transform-origin:center;opacity:0}
+[data-step="2"] .hw-pulse{animation:hwPulse 1.8s cubic-bezier(0.22,1,0.36,1) infinite}
+@keyframes hwPulse{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.35,1.9)}}
+.hw-dot{transition:opacity .5s cubic-bezier(0.22,1,0.36,1)}
+.L-anc,.L-reg,.L-bc{opacity:0;transition:opacity .5s cubic-bezier(0.22,1,0.36,1)}
+[data-step="2"] .L-anc,[data-step="3"] .L-anc,[data-step="4"] .L-anc,
+[data-step="3"] .L-reg,[data-step="4"] .L-reg,[data-step="4"] .L-bc{opacity:1}
+[data-step="4"] .hw-strand.other,[data-step="4"] .hw-dot.other{opacity:.18}
+.hw-filters{display:flex;gap:8px;flex-wrap:wrap;padding:8px;opacity:0;transform:translateY(8px);transition:opacity .5s cubic-bezier(0.22,1,0.36,1),transform .5s cubic-bezier(0.22,1,0.36,1)}
+[data-step="3"] .hw-filters,[data-step="4"] .hw-filters{opacity:1;transform:none}
+.hw-filters span{font-size:12px;line-height:16px;font-weight:500;padding:4px 8px;border-radius:9999px;background:rgba(242,193,78,.1);color:#F2C14E;border:1px solid rgba(242,193,78,.3)}
+.hw-progress{height:4px;margin:8px;border-radius:9999px;background:var(--soft);overflow:hidden}
+.hw-progress b{display:block;height:100%;width:100%;background:#F2C14E;transform-origin:left;transform:scaleX(.25);box-shadow:0 0 10px #F2C14E;transition:transform .3s cubic-bezier(0.22,1,0.36,1)}
+.hw-steps{list-style:none;margin:0;padding:0;display:grid;gap:8px;position:relative}
+.hw-step button{width:100%;display:grid;grid-template-columns:32px 1fr;column-gap:12px;row-gap:4px;align-items:center;text-align:left;padding:12px 16px;border-radius:16px;
+  border:1px solid transparent;background:transparent;color:var(--ink);font:inherit;cursor:pointer;
+  transition:background-color .3s cubic-bezier(0.22,1,0.36,1),border-color .3s cubic-bezier(0.22,1,0.36,1),transform .3s cubic-bezier(0.22,1,0.36,1)}
+.hw-step button:hover{background:var(--soft)}
+.hw-step button:active{transform:scale(0.98)}
+.hw-step.on button{background:var(--surface);border-color:rgba(242,193,78,.35);box-shadow:0 0 32px rgba(242,193,78,.08)}
+.hw-n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--soft);font-weight:600;font-size:14px;line-height:20px;transition:background-color .3s cubic-bezier(0.22,1,0.36,1),color .3s cubic-bezier(0.22,1,0.36,1)}
+.hw-step.done .hw-n{background:rgba(242,193,78,.18);color:#F2C14E}
+.hw-step.on .hw-n{background:#F2C14E;color:#07160F;box-shadow:0 0 16px rgba(242,193,78,.5)}
+.hw-t{font-size:20px;line-height:28px;font-weight:600;text-wrap:balance}
+.hw-step:not(.on) .hw-t{color:var(--muted)}
+.hw-d{grid-column:2;color:var(--muted);font-size:16px;line-height:24px;display:none;text-wrap:pretty}
+.hw-step.on .hw-d{display:block;animation:hwIn .5s cubic-bezier(0.22,1,0.36,1)}
+@keyframes hwIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hw-ctl{display:flex;gap:8px;align-items:center;margin-top:16px;padding-left:16px}
+.hw-play{min-width:128px;text-align:center}
+@media (max-width:860px){.hw{grid-template-columns:1fr;gap:24px}.hw-stage{padding:8px}.hw-lbl{font-size:26px}.hw-bc{font-size:30px}}
+@media (prefers-reduced-motion: reduce){.hw-pulse{display:none}.hw-step.on .hw-d{animation:none}}
+
+/* section molecules: labels floating beside each orbiting molecule */
+.mol-btn{
+  position:absolute;left:0;top:0;pointer-events:auto;cursor:pointer;will-change:transform,opacity;transform-origin:0 50%;
+  display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;border-radius:9999px;
+  font:inherit;font-size:16px;line-height:24px;font-weight:600;color:var(--hx-ink);white-space:nowrap;
+  background:var(--hx-glass);border:1px solid var(--hx-edge);
+  -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
+  box-shadow:0 10px 28px rgba(0,0,0,.45);
+  transition:border-color .3s cubic-bezier(0.22,1,0.36,1),background-color .3s cubic-bezier(0.22,1,0.36,1),box-shadow .3s cubic-bezier(0.22,1,0.36,1);
+}
+.mol-btn::before{content:"";position:absolute;right:100%;top:50%;width:14px;height:1px;background:linear-gradient(90deg,transparent,var(--hx-gold));opacity:.7}
+.mol-btn .n{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:16px;font-weight:600;color:var(--hx-gold);padding:4px 8px;border-radius:9999px;background:rgba(242,193,78,.14)}
+.mol-btn .s{position:absolute;left:12px;top:calc(100% + 8px);opacity:0;transform:translateY(-4px);pointer-events:none;font-size:12px;line-height:16px;font-weight:500;color:var(--hx-ink);white-space:nowrap;padding:4px 8px;border-radius:9999px;background:var(--hx-glass);border:1px solid var(--hx-edge);transition:opacity .3s cubic-bezier(0.22,1,0.36,1),transform .5s cubic-bezier(0.22,1,0.36,1)}
+.mol-btn:hover,.mol-btn:focus-visible,.mol-btn.is-hot{border-color:rgba(242,193,78,.7);background:rgba(8,22,14,.82);box-shadow:0 0 0 4px rgba(242,193,78,.12),0 0 32px rgba(242,193,78,.3),0 10px 28px rgba(0,0,0,.45)}
+.mol-btn:hover .s,.mol-btn:focus-visible .s,.mol-btn.is-hot .s{opacity:1;transform:none}
+body.open .mol-btn{pointer-events:none}
+.mol-btn.flip::before{right:auto;left:100%;transform:scaleX(-1)}
+/* pause control for the moving scene (always available) */
+.motion-btn{position:absolute;right:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:4;display:inline-flex;align-items:center;gap:8px;
+  padding:8px 12px;border-radius:9999px;font:inherit;font-size:14px;line-height:20px;font-weight:600;color:var(--hx-ink);cursor:pointer;
+  background:var(--hx-glass);border:1px solid var(--hx-edge);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  transition:border-color .3s cubic-bezier(0.22,1,0.36,1),transform .3s cubic-bezier(0.22,1,0.36,1),opacity .4s cubic-bezier(0.22,1,0.36,1)}
+.motion-btn svg{width:14px;height:14px}
+.motion-btn .i-play{display:none}.motion-btn.is-paused .i-play{display:inline}.motion-btn.is-paused .i-pause{display:none}
+.motion-btn:hover{border-color:rgba(242,193,78,.6)}.motion-btn:active{transform:scale(0.98)}
+.motion-btn:focus-visible{outline:2px solid var(--hx-gold);outline-offset:3px}
+body.open .motion-btn{opacity:0;pointer-events:none}
+@media (max-width:760px){.mol-btn{font-size:14px;line-height:20px}.mol-btn .s{display:none}.motion-btn span{display:none}.motion-btn{padding:10px}}
+
+/* prominent section labels: solid ivory pills with dark text */
+.mol-btn{background:rgba(255,249,235,.95);color:#0A1F14;border:1.5px solid rgba(242,193,78,.9);padding:8px 16px 8px 8px;font-size:17px;
+  box-shadow:0 0 0 4px rgba(255,241,204,.10),0 0 28px rgba(255,236,190,.35),0 10px 28px rgba(0,0,0,.5);-webkit-backdrop-filter:none;backdrop-filter:none}
+.mol-btn .n{background:#0A1F14;color:#F2C14E}
+.mol-btn::before{width:18px;height:2px;background:linear-gradient(90deg,transparent,#FFF1CC)}
+.mol-btn:hover,.mol-btn:focus-visible,.mol-btn.is-hot{background:#FFFFFF;border-color:#F2C14E;box-shadow:0 0 0 6px rgba(242,193,78,.25),0 0 44px rgba(255,236,190,.6),0 10px 28px rgba(0,0,0,.5)}
+.mol-btn .s{background:rgba(10,31,20,.92);color:#FFF8E7;border-color:rgba(242,193,78,.5)}
+.mol-btn:focus-visible{outline:2px solid #F2C14E;outline-offset:4px}
+@media (max-width:760px){.mol-btn{font-size:14px;padding:6px 12px 6px 6px}}
+
+/* wordmark: the product name leads, in gold, above the headline */
+.wordmark{display:inline-flex;align-items:center;gap:12px;margin:0 0 16px}
+.wordmark img{width:44px;height:auto;filter:drop-shadow(0 0 14px rgba(242,193,78,.35))}
+.wordmark span{font-size:36px;line-height:40px;font-weight:700;letter-spacing:-0.02em;
+  background:linear-gradient(90deg,#FFE9A8,#F2C14E 55%,#D9962A);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(242,193,78,.35))}
+@media (max-width:760px){.wordmark{margin-bottom:12px}.wordmark img{width:32px}.wordmark span{font-size:24px;line-height:32px}.head h1 br{display:none}}
+
+
+/* labels of molecules that orbit off-screen must never widen the page (phones zoom out to fit it) */
+.float-labels{overflow:hidden}
+html{overflow:hidden}
+/* sheet sections sit right under the sheet header (the generic section padding is for long pages) */
+.sheet .sec{padding:0}
+/* ===== Watch: the explainer video always fits, 16:9, no cropping, no scrolling to see it ===== */
+.vbox{--chrome:200px;position:relative;width:min(100%, calc((100vh - var(--chrome)) * 16 / 9));aspect-ratio:16/9;margin:0 auto;
+  border-radius:16px;overflow:hidden;background:#000;border:1px solid var(--line);box-shadow:0 0 40px rgba(47,174,110,.12)}
+@supports (height:100dvh){.vbox{width:min(100%, calc((100dvh - var(--chrome)) * 16 / 9))}}
+.vbox video{display:block;width:100%;height:100%;object-fit:contain;background:#000}
+.sec[data-sec="0"] .explain3{margin-top:16px}
+/* short screens (phones in landscape): a slimmer sheet header leaves more height for the video */
+@media (max-height:520px){
+  .sheet{top:8px!important;bottom:8px!important;border-radius:20px}
+  .sheet-top{padding:10px 16px 6px!important}
+  .sheet-top h2{font-size:22px!important;line-height:28px!important}
+  .sheet .kicker{display:none}
+  .sheet-body{padding:4px 16px 16px!important}
+  .nav-btn{width:36px;height:36px}
+}
+
+/* ===== Try it: tabs, playground, ranked list ===== */
+.tabs2{display:inline-flex;gap:4px;padding:4px;border-radius:9999px;background:var(--soft);margin-bottom:16px}
+.tabs2 button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:15px;font-weight:600;padding:8px 16px;border-radius:9999px;cursor:pointer;transition:background-color .3s cubic-bezier(0.22,1,0.36,1),color .3s cubic-bezier(0.22,1,0.36,1)}
+.tabs2 button:hover{color:var(--ink)}
+.tabs2 button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.tabs2 button:focus-visible,.seg2 input:focus-visible+span{outline:2px solid var(--clay);outline-offset:2px}
+.pg-note{color:var(--muted);font-size:15px;margin-bottom:14px}
+.pg-tag{display:inline-block;margin-right:8px;padding:2px 10px;border-radius:9999px;border:1px solid var(--line);color:var(--ink);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.pg2{display:grid;grid-template-columns:1.6fr 1fr;gap:20px;align-items:start}
+.pg-stage{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px}
+.pg-stage svg{width:100%;height:auto;display:block;overflow:visible}
+.pg-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-bottom:6px}
+.pg-legend span{display:inline-flex;align-items:center;gap:6px}
+.pg-legend i{width:10px;height:10px;border-radius:50%;display:inline-block;background:#3A5546}
+.pg-legend .t i{background:#F2C14E}.pg-legend .o i{background:#2FAE6E}
+.pg-legend em{font-style:normal;font-size:12px;padding:1px 7px;border-radius:9999px;border:1px solid var(--line)}
+.pg-legend .t em{color:#F2C14E;border-color:rgba(242,193,78,.5)}.pg-legend .o em{color:#6FE3A8;border-color:rgba(47,174,110,.5)}
+.pg-sum{margin-top:8px;min-height:44px;font-size:15px;color:var(--ink)}
+.pg-lane{fill:none;stroke-width:5;stroke-linecap:round;opacity:.75;transition:stroke .5s cubic-bezier(0.22,1,0.36,1),opacity .5s cubic-bezier(0.22,1,0.36,1)}
+.pg-lane.t{stroke-width:6.5;opacity:1}
+.pg-anc{fill:#F3EBCF}
+.pg-reg{cursor:default;outline:none}
+.pg-box{fill:rgba(243,235,207,.03);stroke:rgba(243,235,207,.18);stroke-width:2;stroke-dasharray:6 7;transition:fill .5s cubic-bezier(0.22,1,0.36,1),stroke .5s cubic-bezier(0.22,1,0.36,1),opacity .5s cubic-bezier(0.22,1,0.36,1)}
+.pg-reg.rej .pg-box{opacity:.45}
+.pg-reg.cand .pg-box{stroke:#F3EBCF;fill:rgba(243,235,207,.06)}
+.pg-reg.bar .pg-box{stroke:#F2C14E;fill:rgba(242,193,78,.12);stroke-dasharray:none;filter:url(#pgGlow)}
+.pg-reg:focus-visible .pg-box{stroke:#F2C14E;stroke-width:3}
+.pg-id{font-size:22px;font-weight:700;fill:var(--muted)}
+.pg-reg.bar .pg-id{fill:#F2C14E}
+.pg-tag rect{fill:var(--soft);stroke:var(--line);transition:fill .4s cubic-bezier(0.22,1,0.36,1)}
+.pg-tag text{font-size:19px;font-weight:700;fill:var(--muted)}
+.pg-tag.bar rect{fill:#F2C14E;stroke:#F2C14E}.pg-tag.bar text{fill:#07160F}
+.pg-tag.cand rect{fill:var(--surface);stroke:#F3EBCF}.pg-tag.cand text{fill:#F3EBCF}
+.pg-pr{opacity:0;transition:opacity .45s cubic-bezier(0.22,1,0.36,1)}
+.pg-pr.on{opacity:1}
+.pg-pr path{stroke:#F2C14E;stroke-width:5;stroke-linecap:round;fill:none}
+.pg-panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:18px 20px;display:grid;gap:14px}
+.pg-grp{border:0;padding:0;margin:0}
+.pg-grp legend{font-size:14px;color:var(--muted);margin-bottom:6px;padding:0}
+.seg2{display:flex;flex-wrap:wrap;gap:6px}
+.seg2 label{position:relative;cursor:pointer}
+.seg2 input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg2 span{display:inline-block;padding:7px 12px;border-radius:9999px;background:var(--soft);font-size:14px;font-weight:600;transition:background-color .3s cubic-bezier(0.22,1,0.36,1),color .3s cubic-bezier(0.22,1,0.36,1)}
+.seg2 input:checked+span{background:#F2C14E;color:#07160F}
+.pg-f{display:grid;gap:4px}
+.pg-lab{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted)}
+.pg-lab output{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pg-panel input[type="range"]{width:100%;accent-color:#F2C14E;height:22px;margin:0;cursor:pointer}
+.dual{position:relative;height:22px}
+.dual input[type="range"]{position:absolute;inset:0;pointer-events:none;background:transparent;-webkit-appearance:none;appearance:none}
+.dual input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:9999px;background:var(--soft)}
+.dual input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:#F2C14E;border:2px solid #07160F;cursor:pointer}
+.dual input[type="range"]::-moz-range-thumb{pointer-events:auto;width:16px;height:16px;border-radius:50%;background:#F2C14E;border:2px solid #07160F;cursor:pointer}
+.dual input[type="range"]::-moz-range-track{height:4px;border-radius:9999px;background:var(--soft)}
+.dual input[type="range"]:focus-visible{outline:2px solid #F2C14E;outline-offset:3px;border-radius:9999px}
+.pg-reset{justify-self:start;font-size:14px!important;padding:8px 14px!important}
+.pg-rank{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px 20px}
+.pg-rank h3{font-size:18px;margin:0 0 10px}
+.pg-rank ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pg-rank li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:10px 14px;border-radius:14px;background:var(--soft);font-size:15px;border:1px solid rgba(242,193,78,.3)}
+.pg-rank .rk{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#F2C14E;color:#07160F;font-weight:700;font-size:14px}
+.pg-rank li b{color:#F2C14E}
+.pg-empty{color:var(--muted);font-size:15px}
+@media (max-width:900px){.pg2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){.pg-lane,.pg-box,.pg-tag rect,.pg-pr,.tabs2 button,.seg2 span{transition:none}}
+
+/* ===== Use it ===== */
+.use-h{font-size:20px;margin:28px 0 10px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:18px}
+.ptable{width:100%;border-collapse:collapse;font-size:15px;min-width:560px}
+.ptable th{text-align:left;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--soft);padding:10px 14px}
+.ptable td{padding:10px 14px;border-top:1px solid var(--line);vertical-align:top}
+.ptable td:first-child{font-weight:600;white-space:nowrap}
+.ptable td:nth-child(2){color:#F2C14E;white-space:nowrap;font-variant-numeric:tabular-nums}
+.code{position:relative;background:#06140D;border:1px solid var(--line);border-radius:16px}
+.code pre{margin:0;padding:16px 110px 16px 18px;overflow-x:auto;font-size:14px;line-height:1.6;color:#F3EBCF;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.copy{position:absolute;top:10px;right:10px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:inherit;font-size:13px;font-weight:600;padding:6px 12px;border-radius:9999px;cursor:pointer;transition:background-color .3s cubic-bezier(0.22,1,0.36,1)}
+.copy:hover{background:var(--line)}.copy:active{transform:scale(.98)}
+.copy.done{background:#F2C14E;color:#07160F;border-color:#F2C14E}
+.copy:focus-visible{outline:2px solid #F2C14E;outline-offset:2px}
+.links .btn{display:inline-flex;align-items:center;gap:8px}
+.links .btn svg{width:16px;height:16px}
+.btn:focus-visible{outline:2px solid #F2C14E;outline-offset:3px}
+
+/* ===== Case study context line ===== */
+.cs-context{font-size:17px;color:var(--ink);padding:10px 16px;border-radius:14px;background:var(--soft);border:1px solid var(--line);margin-bottom:20px;display:inline-block}
+
+/* ===== hero teaser: a muted clip glowing softly behind the title ===== */
+.hero-teaser{position:absolute;left:0;top:0;width:min(58vw,980px);aspect-ratio:16/9;object-fit:cover;z-index:2;pointer-events:none;opacity:0;
+  -webkit-mask-image:radial-gradient(ellipse 70% 70% at 35% 40%,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse 70% 70% at 35% 40%,#000 30%,transparent 75%);
+  transition:opacity 1.2s cubic-bezier(0.22,1,0.36,1)}
+.hero-teaser.on{opacity:.14}
+.hero-teaser{filter:blur(2px) saturate(1.1)}   /* atmosphere, not a second headline: its own text must not compete with the title */
+body.open .hero-teaser{opacity:0}
+@media (max-width:760px){.hero-teaser{width:100vw}}
+
+/* ================= v3: near full-screen sheet, one-screen sections ================= */
+.sheet{width:min(1400px,96vw);top:3vh;bottom:auto;height:94vh;border-radius:24px}
+@supports (height:100dvh){.sheet{top:3dvh;height:94dvh}}
+.sheet-top{align-items:center;height:64px;padding:0 16px 0 24px;flex:none;border-bottom:1px solid rgba(242,214,140,.12)}
+.sheet-top>div:first-child{display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:baseline;gap:14px;min-width:0}
+.sheet-top h2{margin:0;font-size:28px;line-height:32px;white-space:nowrap}
+.sheet .kicker{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.nav-btn{width:40px;height:40px}
+.sheet-body{padding:16px 24px 20px}
+@media (max-height:520px){.sheet{top:8px!important;bottom:auto!important;height:calc(100vh - 16px)!important}
+  @supports (height:100dvh){.sheet{height:calc(100dvh - 16px)!important}}
+  .sheet-top{height:52px;padding:0 12px 0 16px!important}}
+@media (max-width:760px){.sheet{width:calc(100vw - 16px);border-radius:20px}.sheet-top{padding:0 10px 0 16px}.sheet-top h2{font-size:22px}.sheet .kicker{display:none}.sheet-body{padding:12px 14px 20px}}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ----- Try it: graph left (60%), controls right (40%), ranked list under the graph ----- */
+.pg-note{margin-bottom:10px}
+.pg3{display:grid;grid-template-columns:3fr 2fr;gap:18px;align-items:start}
+.pg-left{display:grid;gap:12px;min-width:0}
+.pg-stage{padding:12px 14px}
+.pg-stage svg{max-height:calc(94vh - 64px - 250px)}
+.pg-sum{min-height:22px;margin-top:4px;font-size:14px}
+.pg-rank{margin-top:0;padding:12px 16px}
+.pg-rank h3{font-size:16px;margin:0 0 8px}
+.pg-rank li{padding:8px 12px;font-size:14px}
+.pg-panel{gap:12px;padding:16px 18px}
+.pg-hl{fill:rgba(242,193,78,.16);stroke:#F2C14E;stroke-width:3;opacity:0;transform-box:fill-box;transform-origin:center;transform:scaleX(.55);
+  transition:opacity .35s cubic-bezier(0.22,1,0.36,1),transform .45s cubic-bezier(0.22,1,0.36,1)}
+.pg-hl.on{opacity:1;transform:none;filter:url(#pgGlow)}
+.pg-reg.bar .pg-box{opacity:0}
+.pg-tag.bar{opacity:0}
+.pg-tag{transition:opacity .25s}
+.pg-bl{opacity:0;transform-box:fill-box;transform-origin:50% 100%;transform:translateY(10px) scale(.5);pointer-events:none;
+  transition:opacity .2s cubic-bezier(0.22,1,0.36,1),transform .45s cubic-bezier(.34,1.56,.64,1)}
+.pg-bl.on{opacity:1;transform:none}
+.pg-bl rect,.pg-bl path{fill:#F2C14E}
+.pg-bl text{font-size:19px;font-weight:700;fill:#07160F}
+.pg-pr path{stroke-width:6}
+@media (max-width:900px){.pg3{grid-template-columns:1fr}.pg-stage svg{max-height:none}}
+@media (prefers-reduced-motion: reduce){.pg-hl,.pg-bl,.pg-tag{transition:none}}
+
+/* ----- Case study dashboards ----- */
+.dash{display:grid;gap:12px}.dash[hidden]{display:none}
+.sec.on[data-sec="2"]{display:flex;flex-direction:column;min-height:100%}
+.sec[data-sec="2"] .tabs2{align-self:flex-start;margin-bottom:12px}
+.dash:not([hidden]){flex:1;grid-template-rows:auto auto 1fr}
+#csP1:not([hidden]){grid-template-rows:auto auto 1fr auto}
+.keyres{display:grid;grid-template-columns:auto 1fr 168px;gap:16px;align-items:start;padding:10px 16px}
+.keyres h3{margin:0;font-size:12px;line-height:20px;letter-spacing:.08em;text-transform:uppercase;color:#F2C14E;white-space:nowrap}
+.finds.row{grid-template-columns:repeat(3,1fr);gap:16px}
+.keyres .thumb{flex:none;gap:4px;font-size:12px}
+.keyres .thumb img{flex:none;height:66px;min-height:0}
+.hnote{margin:10px 0 0;font-size:13px;color:var(--muted)}
+.dgrid>.dcol{grid-template-rows:auto}
+@media (max-width:900px){.keyres{grid-template-columns:1fr;gap:6px}.keyres .thumb img{height:140px}.finds.row{grid-template-columns:1fr;gap:6px}}
+#csP2:not([hidden]){grid-template-rows:auto auto 1fr}
+.qstrip{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:10px}
+.qstrip>div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 14px}
+.qstrip span{display:block;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.qstrip p{margin:2px 0 0;font-size:15px;line-height:21px}
+.qstrip .hi{border-color:rgba(242,193,78,.45)}.qstrip .hi span{color:#F2C14E}
+.kpis{display:grid;gap:10px}
+.kpis.k6{grid-template-columns:repeat(6,1fr)}.kpis.k4{grid-template-columns:repeat(4,1fr)}
+.kpis>div{background:var(--soft);border-radius:14px;padding:6px 14px}
+.kpis b{display:block;font-size:24px;line-height:30px;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.kpis span{font-size:13px;line-height:18px;color:var(--muted)}
+.kpis .hi{background:#2B2412;border:1px solid rgba(242,193,78,.45)}.kpis .hi b{color:#F2C14E}
+.dgrid{display:grid;grid-template-columns:1.55fr 1fr;gap:12px;align-items:stretch}
+.dgrid.g2{grid-template-columns:1fr 1.25fr}
+.dcol{display:grid;gap:12px;grid-template-rows:auto 1fr;min-width:0;align-content:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 16px;min-width:0}
+.panel h3{font-size:16px;line-height:22px;margin:0 0 8px}
+.ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.ph h3{margin:0}.ph .sub{font-size:13px;color:var(--muted)}
+.dnote{font-size:13px;color:var(--muted);margin:0}
+.finds{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13px;line-height:19px}
+.finds li{position:relative;padding-left:14px;color:var(--muted)}
+.finds li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:#F2C14E}
+.finds b{color:var(--ink)}
+.race-key+.finds{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.finds.top{margin:2px 0 8px}
+.hbar .hn{grid-column:2/4;margin-top:-6px;font-size:12px;line-height:16px;color:var(--muted)}
+.qstrip p b{color:var(--ink)}
+/* author */
+.avatar{overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.about-name{margin:0 0 14px;font-size:clamp(30px,3.4vw,44px);line-height:1.1;letter-spacing:-0.02em;font-weight:700;color:#F2C14E}
+.about .about-lead{margin:0 0 12px}
+.about-text{margin:0 0 12px;color:var(--ink);font-size:18px;line-height:28px;max-width:68ch}
+.avatar{font-size:44px;font-weight:700;letter-spacing:-0.02em;color:#F2C14E;background:#2B2412!important;border:1px solid rgba(242,193,78,.45)}
+.about-links .btn{display:inline-flex;align-items:center;gap:8px}
+.about-links .btn svg{width:16px;height:16px;flex:none}
+/* fullscreen video: no dark gradient behind the native control bar, so the bottom of the film stays visible */
+video::-webkit-media-controls-panel{background-image:none!important;background-color:transparent!important}
+video::-webkit-media-controls-enclosure{background:transparent!important}
+/* numbered evidence panels: step number, title, one-line takeaway, then the figure */
+.panel.evi{display:flex;flex-direction:column;min-height:0}
+.sh{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.sh h3{margin:0}
+.sn{flex:none;width:24px;height:24px;border-radius:50%;background:#F2C14E;color:#07160F;font-weight:700;font-size:13px;line-height:24px;text-align:center}
+.take{margin:0 0 10px;font-size:14px;line-height:20px;color:var(--ink);padding:6px 10px;border-left:3px solid #F2C14E;background:rgba(242,193,78,.07);border-radius:0 8px 8px 0}
+.sub2{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fig{display:block;width:100%;border:0;padding:6px;background:#fff;border-radius:12px;cursor:zoom-in;flex:1 1 0;min-height:120px;transition:box-shadow .25s}
+.fig img{display:block;width:100%;height:100%;object-fit:contain}
+.fig:hover{box-shadow:0 0 0 3px rgba(242,193,78,.35)}
+.fig:focus-visible{outline:2px solid #F2C14E;outline-offset:3px}
+.locus-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.locus-btn{border:0;cursor:pointer;background:#F2C14E;color:#07160F;font:inherit;font-size:13px;line-height:18px;font-weight:700;padding:6px 12px;border-radius:9999px;transition:box-shadow .25s}
+.locus-btn:hover,.locus-btn[aria-expanded="true"]{box-shadow:0 0 0 4px rgba(242,193,78,.25)}
+.locus-btn:focus-visible{outline:2px solid #F3F1E6;outline-offset:2px}
+.locus .locus-hint{font-size:13px;color:var(--muted)}
+.tangle-row{display:flex;gap:12px;align-items:center;margin-top:auto;padding-top:8px}
+.tangle-row .hnote{font-size:12px;line-height:17px}
+.fig.thumb-s{flex:none;width:124px;height:74px;min-height:0;padding:4px}
+.tangle-row .hnote{margin:0}
+.race-key b{color:var(--ink);font-weight:600}
+/* side-by-side trees: how each test groups the 7 lactucae strains */
+.trees{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tcol{margin:0;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tcol.best{border-color:rgba(242,193,78,.5);background:#1B2A16}
+.tcol .sc-h{display:block;padding:0;flex:none}
+.tcol .sc-h b{display:block}.tcol .sc-h span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcol.best .sc-h b{color:#F2C14E}
+.tcol svg{display:block;width:100%;height:auto;flex:none;aspect-ratio:340/196}
+.trees,.evi>.take,.evi>.sh{flex:none}
+@media (max-width:620px){.trees{grid-template-columns:1fr}}
+.sortcmp{display:grid;gap:8px}
+.sortcol{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:8px}
+.sc-h{flex:0 0 100%;padding:2px 4px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.grp{flex:1 1 auto}
+.sortcol.best{border-color:rgba(242,193,78,.5);background:#1B2A16}
+.sc-h b{display:block;font-size:15px;line-height:20px}.sc-h span{font-size:12px;line-height:16px;color:var(--muted)}
+.sortcol.best .sc-h b{color:#F2C14E}
+.grp{border-radius:10px;padding:8px 10px;background:rgba(4,13,8,.45);border:1px solid var(--line)}
+.grp.no{border-style:dashed}
+.gl{display:flex;align-items:center;gap:6px;font-size:13px;line-height:18px;font-weight:600;margin-bottom:6px}
+.gi{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:#2FAE6E;color:#07160F}
+.grp.no .gi{background:transparent;border:1.5px solid var(--muted);color:var(--muted)}
+.grp.no .gl{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.sc{display:inline-flex;align-items:center;gap:5px;font-size:12px;line-height:16px;padding:3px 8px;border-radius:9999px;background:var(--surface);border:1px solid var(--line)}
+.sc i{width:8px;height:8px;border-radius:50%}.sc.r1 i{background:#F2C14E}.sc.r4 i{background:#6FE3A8}.sc.r2 i{background:#F29E4C}
+.race-key{flex-wrap:wrap}
+#csP2 .dgrid.g2{grid-template-columns:1.7fr 1fr}
+@media (max-width:900px){#csP2 .dgrid.g2{grid-template-columns:1fr}}
+#csP2 .fig{min-height:110px}
+
+@media (max-width:900px){.fig{flex:none;min-height:0}.fig img{height:auto}.fig.thumb-s img{height:100%}}
+.lib-total{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 24px;background:#2B2412;border:1px solid rgba(242,193,78,.45);border-radius:18px;padding:12px 20px;margin-bottom:14px}
+.lt-n{display:flex;align-items:baseline;gap:12px}.lt-n b{font-size:40px;line-height:44px;color:#F2C14E;letter-spacing:-0.02em}.lt-n span{font-size:17px}
+.lt-s{display:flex;gap:10px;flex-wrap:wrap}.lt-s span{font-size:14px;color:var(--muted);background:var(--soft);border-radius:9999px;padding:5px 12px}
+.sec[data-sec="3"] .lib{margin-top:14px}
+/* chromosome map */
+.chrom{position:relative;padding-top:48px;min-height:96px}
+.chrom.multi{padding-top:4px;display:grid;gap:6px}
+.crow{display:flex;gap:3px;align-items:flex-start;min-width:0;flex:1}
+.cbar{position:relative;flex-basis:0;min-width:3px;height:22px;border-radius:6px}
+.cbar.core{background:#2FAE6E}.cbar.acc{background:#C98A5E}
+.cname{position:absolute;left:0;right:0;top:26px;font-size:11px;line-height:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:clip;text-align:center}
+.chrom.multi .cbar{height:14px;border-radius:4px}.chrom.multi .cname{display:none}
+.crow-l{display:grid;grid-template-columns:132px 1fr;align-items:center;gap:8px}
+.clab{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tick{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1.5px;border-radius:2px}
+.tick.cand{background:rgba(243,241,230,.28);top:2px;bottom:2px;width:2px}
+.tick.pb{background:#F3EBCF}.tick.li{background:#F2C14E;width:4px}
+.chrom-key{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);margin-top:22px}
+.chrom.multi+.chrom-key{margin-top:10px}.chrom-key[hidden]{display:none}
+.chrom-key i{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+.chrom-key .core{background:#2FAE6E}.chrom-key .acc{background:#C98A5E}.chrom-key .loc{background:#F2C14E;width:4px;height:14px;vertical-align:-2px}
+.chrom-key .pbk{background:#F3EBCF;width:4px;height:14px;vertical-align:-2px}.chrom-key .lik{background:#F2C14E;width:4px;height:14px;vertical-align:-2px}
+.cmark{position:absolute;top:-6px;bottom:-6px;width:28px;margin-left:-14px;border:0;background:transparent;padding:0;cursor:pointer;color:inherit;font:inherit;z-index:2}
+.cmark .stem{position:absolute;left:12px;width:5px;top:0;bottom:0;border-radius:3px;background:#F2C14E;box-shadow:0 0 14px rgba(242,193,78,.7)}
+.cmark .pill{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#F2C14E;color:#07160F;font-size:13px;line-height:18px;font-weight:700;padding:5px 11px;border-radius:9999px;transition:box-shadow .25s}
+.cmark.al-r .pill{left:auto;right:-6px;transform:none}.cmark.al-l .pill{left:-6px;transform:none}
+.cmark:hover .pill,.cmark[aria-expanded="true"] .pill{box-shadow:0 0 0 4px rgba(242,193,78,.25)}
+.cmark:focus-visible{outline:none}.cmark:focus-visible .pill{outline:2px solid #F3F1E6;outline-offset:2px}
+.chrom.missing{padding-top:0;min-height:0;display:grid;gap:10px}
+.cmiss{margin:0;font-size:14px;color:var(--muted);border:1.5px dashed var(--line);border-radius:12px;padding:10px 12px}
+.cmiss code{color:#F7DC8B;font-size:13px}
+.chrom.missing .cmark-holder{position:relative;height:30px}
+.chrom.missing .cmark{position:static;width:auto;margin:0;height:auto}
+.chrom.missing .cmark .stem{display:none}.chrom.missing .cmark .pill{position:static;transform:none;display:inline-block}
+.locus{margin-top:10px;position:relative}
+.locus-hint{margin:0;font-size:14px;color:var(--muted)}
+.locus-detail{position:absolute;left:-8px;right:-8px;bottom:calc(100% + 8px);z-index:6;background:#0C2117;border:1px solid rgba(242,193,78,.45);border-radius:14px;padding:10px 12px;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+.locus-detail svg{width:100%;height:auto;max-height:110px;display:block}
+@media (max-width:900px){.locus-detail{position:static;box-shadow:none;margin-top:6px}}
+.locus-detail .lw{fill:rgba(242,193,78,.18);stroke:#F2C14E;stroke-width:2}
+.locus-detail .lw-t{font-size:11px;font-weight:700;fill:#F2C14E}
+.locus-detail .lbb{stroke:var(--line);stroke-width:3}
+.locus-detail .gene{fill:#12301F;stroke:#2FAE6E;stroke-width:2}.locus-detail .gene.s18{stroke:#6FE3A8}
+.locus-detail .snp{stroke:#F2C14E;stroke-width:3}.locus-detail .snp-h{fill:#F2C14E}
+.locus-detail .gn{font-size:13px;fill:var(--ink)}
+.locus-key{display:flex;gap:16px;font-size:12px;color:var(--muted);margin:4px 0 0}
+.locus-key .snpk{display:inline-block;width:3px;height:12px;background:#F2C14E;margin-right:6px;vertical-align:-1px}
+@media (prefers-reduced-motion: no-preference){.locus-detail:not([hidden]){animation:lcIn .35s cubic-bezier(0.22,1,0.36,1)}}
+@keyframes lcIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* bar chart */
+.hbars{display:grid;gap:8px}
+.hbar{display:grid;grid-template-columns:92px 1fr 34px;align-items:center;gap:10px;font-size:14px}
+.hbar .hl{color:var(--muted)}.hbar.best .hl{color:#F2C14E;font-weight:700}
+.hbar .track{height:24px;background:var(--soft);border-radius:8px;overflow:hidden}
+.hbar .fill{height:100%;background:#5E7F6C;border-radius:8px;display:flex;align-items:center;padding-left:8px}
+.hbar.best .fill{background:#F2C14E}
+.hbar .fill.hatch{background:repeating-linear-gradient(135deg,rgba(169,187,174,.55) 0 6px,rgba(169,187,174,.15) 6px 12px)}
+.hbar em{font-style:normal;font-size:12px;font-weight:700;color:#F3F1E6}
+.hbar .hv{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+/* tanglegram thumbnail and lightbox */
+.tangle{padding:8px;display:flex}
+.thumb{flex:1;display:flex;flex-direction:column;gap:6px;border:0;background:transparent;padding:0;cursor:zoom-in;color:var(--muted);font:inherit;font-size:13px;text-align:left;min-height:0}
+.thumb img{width:100%;flex:1;min-height:90px;height:0;object-fit:contain;border-radius:10px;background:#fff;transition:transform .3s cubic-bezier(0.22,1,0.36,1)}
+.thumb:hover img{transform:scale(1.02)}
+.thumb:focus-visible{outline:2px solid #F2C14E;outline-offset:3px;border-radius:12px}
+.lightbox{border:0;padding:0;background:transparent;max-width:min(96vw,1600px);max-height:94vh;overflow:visible}
+.lightbox::backdrop{background:rgba(2,8,5,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.lightbox img{display:block;max-width:min(96vw,1600px);max-height:90vh;object-fit:contain;border-radius:14px;background:#fff}
+.lb-close{position:absolute;top:-14px;right:-14px;z-index:1}
+/* race tree + matrix */
+.mx-wrap{overflow-x:auto}
+.mx{border-collapse:collapse;width:100%;font-size:14px}
+.mx th,.mx td{height:28px;padding:0 8px;text-align:center;white-space:nowrap}
+.mx thead th{font-size:12px;line-height:16px;font-weight:600;color:var(--muted);white-space:normal;vertical-align:bottom;padding-bottom:6px;height:auto}
+.mx tbody th{text-align:left;font-weight:500}
+.mx td.tc,.mx th.tc{width:92px;padding:0;vertical-align:top}
+.rtree{display:block}
+.rdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.cell{display:inline-block;width:18px;height:18px;border-radius:50%;vertical-align:middle}
+.cell.on.li{background:#F2C14E}.cell.on.pb{background:#F3EBCF}.cell.off{border:2px solid var(--line)}
+.race-key{display:flex;gap:16px;font-size:13px;color:var(--muted);margin-top:8px}
+.race-key i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+@media (max-width:520px){.mx td.tc,.mx th.tc{width:40px}.rtree{width:40px}.mx th,.mx td{padding:0 4px}.mx thead th{font-size:11px}.mx tbody th{font-size:12px}.rdot{margin-right:4px;width:8px;height:8px}}
+@media (max-width:1100px){.kpis.k6{grid-template-columns:repeat(3,1fr)}.qstrip{grid-template-columns:1fr}}
+@media (max-width:900px){.dgrid,.dgrid.g2{grid-template-columns:1fr}.crow-l{grid-template-columns:110px 1fr}}
+@media (max-width:520px){.kpis.k6,.kpis.k4{grid-template-columns:repeat(2,1fr)}.kpis b{font-size:22px;line-height:28px}.cname{display:none}.chrom{padding-top:44px}.cmark .pill{font-size:12px}.chrom-key{margin-top:10px}}
+
+/* ----- Get the code ----- */
+.sec[data-sec="4"] .io{margin-top:4px}
+.todo-pill{display:inline-block;margin-left:8px;padding:2px 10px;border-radius:9999px;background:#F29E4C;color:#07160F;font-size:12px;font-weight:700;letter-spacing:.06em;vertical-align:3px}
+.btn-xl{font-size:20px!important;padding:16px 28px!important;display:inline-flex!important;align-items:center;gap:12px;background:#F2C14E!important;color:#07160F!important;font-weight:700}
+.btn-xl svg{width:24px!important;height:24px!important}
+</style>
+</head>
+<body class="helix">
+<div class="head" id="head">
+  <div>
+    <div class="wordmark"><span>PanBarcode</span></div>
+    <h1>Diagnostic DNA barcodes<br> for closely related microbes</h1>
+    <p>Each glowing molecule opens one part of the story. Pick one.</p>
+  </div>
+</div>
+<video class="hero-teaser" id="heroTeaser" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>
+<canvas id="helix" aria-hidden="true"></canvas>
+<div class="float-labels" id="floatLabels"></div>
+<nav aria-label="Sections"><ul class="sr-nav" id="srNav"></ul></nav>
+<p class="hint" id="hint">Each glowing molecule opens a section. Hover one to pause.</p>
+<button class="motion-btn" id="motionBtn" type="button" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="i-pause" d="M6 4h3v12H6zM11 4h3v12h-3z" fill="currentColor"/><path class="i-play" d="M6 4 L16 10 L6 16 Z" fill="currentColor"/></svg><span>Pause motion</span></button>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle" hidden>
+  <div class="sheet-top">
+    <div><div class="kicker" id="sKick"></div><h2 id="sTitle"></h2></div>
+    <div class="sheet-nav">
+      <button class="nav-btn" id="sPrev" aria-label="Previous loop"><svg viewBox="0 0 20 20"><path d="M12 4 L6 10 L12 16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="nav-btn" id="sNext" aria-label="Next loop"><svg viewBox="0 0 20 20"><path d="M8 4 L14 10 L8 16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="nav-btn close" id="sClose" aria-label="Back to the helix"><svg viewBox="0 0 20 20"><path d="M5 5 L15 15 M15 5 L5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+  <div class="sheet-body">
+
+  <section class="sec" data-sec="0">
+    <div class="vbox" id="vbox">
+      <video id="explainer" controls playsinline preload="metadata" poster="assets/explainer_poster.jpg">
+        <source src="assets/panbarcode_explainer.mp4" type="video/mp4">
+        Your browser can't play this video. <a href="assets/panbarcode_explainer.mp4">Download the explainer (MP4)</a>.
+      </video>
+    </div>
+    <div class="explain3" id="watchCards">
+      <div><b>Why it matters</b><span>Strains with one species name can need very different decisions.</span></div>
+      <div><b>How it works</b><span>From DNA of many strains to a graph, anchors and a barcode.</span></div>
+      <div><b>Where it helps</b><span>Diagnostic labs, seed testing and surveillance, for any microbe with genomes.</span></div>
+    </div>
+  </section>
+
+  <section class="sec" data-sec="1">
+    <p class="pg-note"><span class="pg-tag">Illustrative example</span> Real results are in the Case study.</p>
+    <div class="pg3">
+      <div class="pg-left">
+        <figure class="pg-stage">
+          <div class="pg-legend" id="pgLegend"></div>
+          <svg id="pgSvg" viewBox="0 0 1000 470" role="img" aria-labelledby="pgSvgTitle"><title id="pgSvgTitle">Illustrative pangenome graph: six genomes, seven anchors and six candidate regions</title></svg>
+          <p class="pg-sum" id="pgSum" aria-live="polite"></p>
+        </figure>
+        <div class="pg-rank">
+          <h3>Barcodes, ranked</h3>
+          <ol id="pgList" aria-live="polite"></ol>
+          <p class="pg-empty" id="pgEmpty" hidden>No region passes every filter. Loosen a setting to see a barcode.</p>
+        </div>
+      </div>
+      <form class="pg-panel" id="pgPanel" onsubmit="return false">
+        <fieldset class="pg-grp">
+          <legend>Target group</legend>
+          <div class="seg2" role="radiogroup" aria-label="Target group">
+            <label><input type="radio" name="grp" value="A" checked><span>pathogen vs others</span></label>
+            <label><input type="radio" name="grp" value="B"><span>race 1 vs race 4</span></label>
+          </div>
+        </fieldset>
+        <div class="pg-f">
+          <div class="pg-lab"><span>Barcode length</span><output id="oLen"></output></div>
+          <div class="dual"><input type="range" id="lenMin" min="100" max="3000" step="10" value="200" aria-label="Minimum barcode length (bp)"><input type="range" id="lenMax" min="100" max="3000" step="10" value="3000" aria-label="Maximum barcode length (bp)"></div>
+        </div>
+        <div class="pg-f">
+          <div class="pg-lab"><span>GC content</span><output id="oGc"></output></div>
+          <div class="dual"><input type="range" id="gcMin" min="30" max="70" step="1" value="40" aria-label="Minimum GC (%)"><input type="range" id="gcMax" min="30" max="70" step="1" value="60" aria-label="Maximum GC (%)"></div>
+        </div>
+        <div class="pg-f">
+          <div class="pg-lab"><label for="rep">Max repeats in barcode</label><output id="oRep" for="rep"></output></div>
+          <input type="range" id="rep" min="0" max="20" step="1" value="10">
+        </div>
+        <div class="pg-f">
+          <div class="pg-lab"><label for="anc">Min anchor length</label><output id="oAnc" for="anc"></output></div>
+          <input type="range" id="anc" min="20" max="50" step="1" value="30">
+        </div>
+        <div class="pg-f">
+          <div class="pg-lab"><label for="dia">Min diagnostic positions</label><output id="oDia" for="dia"></output></div>
+          <input type="range" id="dia" min="1" max="6" step="1" value="1">
+        </div>
+        <div class="pg-f">
+          <div class="pg-lab"><label for="dst">Min distance to closest other strain</label><output id="oDst" for="dst"></output></div>
+          <input type="range" id="dst" min="1" max="8" step="1" value="2">
+        </div>
+        <button type="button" class="btn ghost pg-reset" id="pgReset">Reset to defaults</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="sec" data-sec="2">
+    <div class="tabs2" role="tablist" aria-label="Case study views">
+      <button role="tab" id="csTab1" aria-controls="csP1" aria-selected="true"><i>lactucae</i> vs. 96 others</button>
+      <button role="tab" id="csTab2" aria-controls="csP2" aria-selected="false" tabindex="-1">Races within <i>lactucae</i></button>
+    </div>
+
+    <div id="csP1" role="tabpanel" aria-labelledby="csTab1" class="dash">
+      <div class="qstrip">
+        <div><span>Asked</span><p>Can we find a barcode that separates f. sp. <i>lactucae</i> from the other 90 strains?</p></div>
+        <div class="hi"><span>Found</span><p>24 candidate barcodes at one locus</p></div>
+        <div><span>Means</span><p>One region in a conserved gene marks the lettuce pathogen.</p></div>
+      </div>
+      <div class="kpis k6">
+        <div><b>97</b><span>genomes</span></div>
+        <div><b>7</b><span>target strains</span></div>
+        <div class="hi"><b>24</b><span>candidate barcodes</span></div>
+        <div><b>1</b><span>locus</span></div>
+        <div><b>1,246 bp</b><span>best barcode</span></div>
+        <div><b>3 bases</b><span>closest other strain</span></div>
+      </div>
+      <div class="dgrid">
+        <div class="panel evi">
+          <div class="sh"><span class="sn" aria-hidden="true">1</span><h3>Where the barcodes are</h3></div>
+          <p class="take">All 24 barcodes sit at one locus on a core chromosome.</p>
+          <button type="button" class="fig" data-full="assets/chrom_map_97.png" data-label="Chromosome map of the 97 genomes" aria-haspopup="dialog">
+            <img src="assets/chrom_map_97.png" alt="Chromosome map of the 97 genomes: 7 target and 90 other strains, core chromosomes in sage, accessory chromosomes in clay, barcodes marked as dark ticks on one core chromosome">
+          </button>
+          <div class="locus" id="locus1">
+            <div class="locus-row">
+              <button type="button" class="locus-btn" id="locusBtn" aria-expanded="false" aria-controls="locusDetail">24 barcodes · 1 locus · core chromosome</button>
+              <span class="locus-hint">Hover or click to see the three genes at this locus</span>
+            </div>
+            <div class="locus-detail" id="locusDetail" hidden>
+              <svg viewBox="0 0 640 118" role="img" aria-labelledby="locusTitle"><title id="locusTitle">The barcode locus: ribosomal protein S18, IMP3 and a methyltransferase in order, with the barcode window spanning them and the diagnostic SNP inside S18</title>
+                <rect x="40" y="10" width="560" height="14" rx="7" class="lw"/>
+                <text x="320" y="21" text-anchor="middle" class="lw-t">barcode window</text>
+                <line x1="20" y1="66" x2="620" y2="66" class="lbb"/>
+                <rect x="40" y="50" width="170" height="32" rx="8" class="gene s18"/>
+                <rect x="235" y="50" width="170" height="32" rx="8" class="gene"/>
+                <rect x="430" y="50" width="170" height="32" rx="8" class="gene"/>
+                <line x1="150" y1="34" x2="150" y2="84" class="snp"/>
+                <path d="M144 34 L156 34 L150 44 Z" class="snp-h"/>
+                <text x="125" y="104" text-anchor="middle" class="gn">ribosomal protein S18</text>
+                <text x="320" y="104" text-anchor="middle" class="gn">IMP3</text>
+                <text x="515" y="104" text-anchor="middle" class="gn">methyltransferase</text>
+              </svg>
+              <p class="locus-key"><span><i class="snpk"></i>diagnostic SNP</span><span>Schematic, not to scale</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="panel evi">
+          <div class="sh"><span class="sn" aria-hidden="true">2</span><h3>How well each marker separates <i>lactucae</i></h3></div>
+          <p class="take">Non-target strains mixed in with <i>lactucae</i>: fewer is better.</p>
+          <div class="hbars" role="list">
+            <div class="hbar" role="listitem"><span class="hl">ITS</span><div class="track"><div class="fill hatch" style="width:100%"><em>unresolved</em></div></div><span class="hv">all</span><small class="hn">All strains on one unresolved branch</small></div>
+            <div class="hbar" role="listitem"><span class="hl">TEF1</span><div class="track"><div class="fill" style="width:72%"></div></div><span class="hv">5</span><small class="hn">207-A, al156, Strain9, nrrl38542, 1574</small></div>
+            <div class="hbar best" role="listitem"><span class="hl">PanBarcode</span><div class="track"><div class="fill" style="width:29%"></div></div><span class="hv">2</span><small class="hn">al156, 1574 (207-A, Strain9 and nrrl38542 now separate)</small></div>
+          </div>
+          <div class="tangle-row">
+            <button type="button" class="fig thumb-s" id="tangleBtn" data-full="assets/tangle_M098_2.png" data-label="Tanglegram, full size" aria-haspopup="dialog">
+              <img src="assets/tangle_M098_2.png" alt="Tanglegram comparing the PanBarcode barcode tree with the genome tree">
+            </button>
+            <p class="hnote"><b>Tanglegram:</b> barcode tree vs. genome tree. Click to open full size. 744085 sits in a separate lineage in every tree, including the genome tree.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="csP2" role="tabpanel" aria-labelledby="csTab2" class="dash" hidden>
+      <div class="qstrip">
+        <div><span>Asked</span><p>With only the 7 <i>lactucae</i> genomes, can barcodes tell races apart?</p></div>
+        <div class="hi"><span>Found</span><p>40 barcodes; the best (386 bp) separates races 1, 2 and 4</p></div>
+        <div><span>Means</span><p><b>Below strain level:</b> the same method works below the forma specialis level.</p></div>
+      </div>
+      <div class="kpis k4">
+        <div><b>7</b><span>genomes</span></div>
+        <div><b>3</b><span>races</span></div>
+        <div class="hi"><b>40</b><span>barcodes</span></div>
+        <div><b>386 bp</b><span>best barcode (M18451)</span></div>
+      </div>
+      <div class="dgrid g2">
+        <div class="panel evi">
+          <div class="sh"><span class="sn" aria-hidden="true">1</span><h3>How each test sorts the 7 strains</h3></div>
+          <p class="take">Known markers only flag race 1. PanBarcode's best barcode sorts all 7 strains into races 1, 4 and 2.</p>
+          <div class="trees">
+            <figure class="tcol">
+              <figcaption class="sc-h"><b>Known markers</b><span>Li et al. 2025 · race 1-specific</span></figcaption>
+              <svg id="treeLi" viewBox="0 0 340 196" role="img" aria-label="Known markers split the 7 strains into two groups: race 1 (ag171, at142, JCP043, TG-JCP043-Pacbio) and an unresolved group without the marker (AT141, al185, 744085), where race 4 and race 2 cannot be told apart"></svg>
+            </figure>
+            <figure class="tcol best">
+              <figcaption class="sc-h"><b>PanBarcode</b><span>Best barcode M18451 · 1–2 diagnostic positions</span></figcaption>
+              <svg id="treePb" viewBox="0 0 340 196" role="img" aria-label="The PanBarcode tree separates three branches: race 1 (ag171, at142, JCP043, TG-JCP043-Pacbio, identical), race 4 (AT141, al185) and race 2 (744085)"></svg>
+            </figure>
+          </div>
+          <div class="race-key"><span>Dot color = the strain's known race:</span><span><i style="background:#F2C14E"></i>race 1</span><span><i style="background:#6FE3A8"></i>race 4</span><span><i style="background:#F29E4C"></i>race 2</span></div>
+        </div>
+        <div class="panel evi">
+          <div class="sh"><span class="sn" aria-hidden="true">2</span><h3>Where the markers are</h3></div>
+          <p class="take">Known race 1 sequences (×) cluster mostly on one core chromosome. PanBarcode barcodes (dark bars) sit on core chromosomes in all 7 genomes.</p>
+          <button type="button" class="fig" data-full="assets/chrom_map_lact7.png" data-label="Chromosome map of the 7 lactucae genomes" aria-haspopup="dialog">
+            <img src="assets/chrom_map_lact7.png" alt="Chromosome map of the 7 lactucae genomes grouped by race: PanBarcode barcodes as dark bars on core chromosomes in every genome, known race 1 sequences as crosses in race 1 genomes only">
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <dialog class="lightbox" id="figDlg" aria-label="Figure, full size">
+      <button type="button" class="nav-btn close lb-close" id="figClose" aria-label="Close the figure"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5 L15 15 M15 5 L5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      <img id="figImg" src="" alt="">
+    </dialog>
+  </section>
+
+  <section class="sec" data-sec="3">
+    <p class="lead">One best barcode per group. All are candidates from genome data and still need lab validation.</p>
+    <div class="lib" id="lib"></div>
+  </section>
+
+  <section class="sec" data-sec="4">
+    <div class="io">
+      <div class="io-col"><div class="io-h">You give it</div>
+        <div class="io-card"><b>A pangenome graph</b><span>Built from your genomes, for example with PGGB</span></div>
+        <div class="io-card"><b>Group labels</b><span>Which strains are the target, which are not</span></div></div>
+      <div class="io-arrow" aria-hidden="true"><svg viewBox="0 0 60 20"><path d="M2 10 H54 M46 3 L55 10 L46 17" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="io-col"><div class="io-h">You get back</div>
+        <div class="io-card hi"><b>Ranked barcodes</b><span>With length, GC and location</span></div>
+        <div class="io-card hi"><b>Primers</b><span>On the conserved anchors</span></div>
+        <div class="io-card hi"><b>Diagnostic positions</b><span>And the closest other strain</span></div></div>
+    </div>
+    <h3 class="use-h">Example command <span class="todo-pill">TODO</span></h3>
+    <div class="code">
+      <!-- TODO: replace the line below with the example command copied exactly from the repository README -->
+      <pre id="cmd"><code># TODO: paste the example command exactly as it appears in the repository README</code></pre>
+      <button type="button" class="copy" id="copyCmd" aria-label="Copy the example command"><span>Copy</span></button>
+    </div>
+    <div class="links">
+      <a class="btn btn-xl" data-link="github" href="https://github.com/ChopraKritika/PanBarcode" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>View PanBarcode on GitHub</a>
+    </div>
+  </section>
+
+  <section class="sec" data-sec="5">
+    <div class="about">
+      <div class="avatar"><img src="assets/kritika_chopra.jpg" alt="Kritika Chopra" width="180" height="180" onerror="this.parentNode.textContent='KC'"></div>
+      <div>
+        <h3 class="about-name">Kritika Chopra</h3>
+        <p class="about-text">Many genomes, one graph, and one question: what tells these strains apart? I love puzzles like that, and I love explaining them in creative ways. I’m a computational biologist finishing my master’s in Plant Pathology at UW–Madison. I spend my days between code and biology, and I enjoy making both make sense to people outside either world.</p>
+        <p class="about-text">Beyond my research, I teach coding workshops for researchers, run social media for plant-health outreach, and am turning the plant disease triangle into a board game, because good science should be fun to share.</p>
+        <div class="chips2"><span>Reproducible pipelines</span><span>Data visualization</span><span>Science communication</span><span>Pangenomics</span><span>Comparative genomics</span><span>Phylogenetics</span></div>
+        <div class="links about-links">
+          <a class="btn" href="mailto:kritika.chopra@wisc.edu"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M1.5 3.5h13v9h-13z M1.5 4l6.5 5 6.5-5"/></svg>kritika.chopra@wisc.edu</a>
+          <a class="btn ghost" href="https://github.com/ChopraKritika" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>github.com/ChopraKritika</a>
+          <a class="btn ghost" href="https://www.linkedin.com/in/kritika-chopra-550161179/" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M0 1.15C0 .52.52 0 1.18 0h13.64C15.48 0 16 .52 16 1.15v13.7c0 .63-.52 1.15-1.18 1.15H1.18C.52 16 0 15.48 0 14.85V1.15zM4.75 13.4V6.17H2.35v7.23h2.4zM3.55 5.18c.84 0 1.36-.56 1.36-1.25-.02-.71-.52-1.25-1.34-1.25-.82 0-1.36.54-1.36 1.25 0 .69.52 1.25 1.33 1.25h.01zM13.4 13.4V9.25c0-2.22-1.18-3.25-2.76-3.25-1.27 0-1.84.7-2.16 1.19V6.17H6.08c.03.68 0 7.23 0 7.23h2.4V9.36c0-.22.02-.43.08-.59.17-.43.57-.88 1.23-.88.87 0 1.22.66 1.22 1.64v3.87h2.4z"/></svg>LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </div>
+</div>
+
+<script>
+
+const D = {
+  library:[
+    {t:"lactucae",host:"lettuce",count:24,loci:1,bc:"M098",len:"1,246 bp",snps:"1–2",gap:"3 bases",n:"7 vs 90 genomes"},
+    {t:"lycopersici",host:"tomato"},{t:"cubense",host:"banana"},{t:"melonis",host:"melon"},
+    {t:"niveum",host:"watermelon"},{t:"vasinfectum",host:"cotton"}]
+};
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const NS="http://www.w3.org/2000/svg";
+const el=(n,a={},p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+
+/* ---------- tabs (shared): click, arrow keys, Home and End ---------- */
+function tabset(tabs,panels){
+  const sel=(i,focus)=>{tabs.forEach((t,k)=>{t.setAttribute("aria-selected",String(k===i));t.tabIndex=k===i?0:-1;panels[k].hidden=k!==i;});if(focus)tabs[i].focus();};
+  tabs.forEach((t,i)=>{t.addEventListener("click",()=>sel(i));
+    t.addEventListener("keydown",e=>{const n=tabs.length;let j=null;
+      if(e.key==="ArrowRight")j=(i+1)%n;else if(e.key==="ArrowLeft")j=(i-1+n)%n;else if(e.key==="Home")j=0;else if(e.key==="End")j=n-1;
+      if(j!==null){e.preventDefault();sel(j,true);}});});
+  return sel;}
+
+/* ---------- library ---------- */
+const lib=document.getElementById("lib");
+D.library.forEach(e=>{const d=document.createElement("div");
+  if(e.bc){d.className="card";d.innerHTML=`<h3>f. sp. <i>${e.t}</i></h3><div class="host">${e.host} · ${e.n}</div><dl><dt>Barcodes found</dt><dd>${e.count} (${e.loci} locus)</dd><dt>Best barcode</dt><dd>${e.bc}, ${e.len}</dd><dt>Diagnostic SNPs</dt><dd>${e.snps}</dd><dt>Closest other strain</dt><dd>${e.gap} away</dd></dl><div class="tag">Candidate · not yet lab-validated</div>`;}
+  else{d.className="card soon";d.innerHTML=`<h3>f. sp. <i>${e.t}</i></h3><p>${e.host} · coming soon</p>`;}
+  lib.appendChild(d);});
+/* ---------- editable links (GitHub) ---------- */
+const LINKS={github:"https://github.com/ChopraKritika/PanBarcode"};
+document.querySelectorAll("[data-link]").forEach(a=>{const u=LINKS[a.dataset.link];if(u)a.href=u;});
+
+/* ---------- copy the example command ---------- */
+(()=>{const b=document.getElementById("copyCmd"),code=document.querySelector("#cmd code");if(!b)return;
+  b.addEventListener("click",async()=>{const txt=code.textContent;let ok=false;
+    try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){try{const r=document.createRange();r.selectNodeContents(code);const s=getSelection();s.removeAllRanges();s.addRange(r);ok=document.execCommand("copy");s.removeAllRanges();}catch(_){}}
+    b.querySelector("span").textContent=ok?"Copied":"Select and copy";b.classList.toggle("done",ok);
+    setTimeout(()=>{b.querySelector("span").textContent="Copy";b.classList.remove("done");},1800);});})();
+
+/* ---------- Case study: tabs, race tree + matrix, chromosome maps, tanglegram ---------- */
+(()=>{
+tabset([document.getElementById("csTab1"),document.getElementById("csTab2")],[document.getElementById("csP1"),document.getElementById("csP2")]);
+
+/* race trees: same strain order in both, so rows line up across the two trees.
+   Each group: tips, line colour, label, node x (closer to the tips = shorter branches), dashed = unresolved */
+(()=>{const C={1:"#F2C14E",4:"#6FE3A8",2:"#F29E4C"},GREY="#7E9486",RH=24,GAP=10;
+  const S1=[["ag171",1],["at142",1],["JCP043",1],["TG-JCP043-Pacbio",1]],S4=[["AT141",4],["al185",4]],S2=[["744085",2]];
+  function tree(id,groups){const svg=document.getElementById(id);let y=14;const mids=[];
+    groups.forEach(g=>{const ys=g.tips.map((t,i)=>y+i*RH);y+=g.tips.length*RH+GAP;const mid=(ys[0]+ys[ys.length-1])/2;mids.push(mid);
+      const st={stroke:g.col,"stroke-width":3,"stroke-linecap":"round"};if(g.dash)st["stroke-dasharray"]="5 6";
+      if(g.tips.length>1){el("line",Object.assign({x1:12,y1:mid,x2:g.nx,y2:mid},st),svg);el("line",Object.assign({x1:g.nx,y1:ys[0],x2:g.nx,y2:ys[ys.length-1]},st),svg);}
+      ys.forEach((yy,i)=>{const t=g.tips[i];el("line",Object.assign({x1:g.tips.length>1?g.nx:12,y1:yy,x2:150,y2:yy},st),svg);
+        el("circle",{cx:160,cy:yy,r:5,fill:C[t[1]]},svg);const tx=el("text",{x:170,y:yy+4.5,"font-size":13,fill:"#F3F1E6"},svg);tx.textContent=t[0];});
+      el("line",{x1:286,y1:ys[0]-8,x2:286,y2:ys[ys.length-1]+8,stroke:g.col,"stroke-width":2.5,"stroke-linecap":"round"},svg);
+      g.label.forEach((ln,i)=>{const tx=el("text",{x:293,y:mid+4.5+(i-(g.label.length-1)/2)*14,"font-size":12,"font-weight":700,fill:g.col},svg);tx.textContent=ln;});});
+    el("line",{x1:12,y1:mids[0],x2:12,y2:mids[mids.length-1],stroke:"#A9BBAE","stroke-width":3,"stroke-linecap":"round"},svg);}
+  tree("treeLi",[{tips:S1,col:C[1],nx:70,label:["race 1"]},{tips:S4.concat(S2),col:GREY,nx:70,dash:true,label:["can't","tell"]}]);
+  tree("treePb",[{tips:S1,col:C[1],nx:128,label:["race 1"]},{tips:S4,col:C[4],nx:70,label:["race 4"]},{tips:S2,col:C[2],label:["race 2"]}]);
+})();
+
+/* figures open full size in one lightbox (chromosome maps and the tanglegram) */
+const dlg=document.getElementById("figDlg"),figImg=document.getElementById("figImg");let opener=null;
+document.querySelectorAll(".fig[data-full]").forEach(b=>b.addEventListener("click",()=>{opener=b;figImg.src=b.dataset.full;figImg.alt=b.querySelector("img").alt;
+  dlg.setAttribute("aria-label",b.dataset.label||"Figure, full size");dlg.showModal();document.getElementById("figClose").focus();}));
+document.getElementById("figClose").addEventListener("click",()=>dlg.close());
+dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close();});
+dlg.addEventListener("close",()=>{if(opener)opener.focus();});
+
+/* the barcode locus: hover shows the three genes, click pins them */
+const lbtn=document.getElementById("locusBtn"),detail=document.getElementById("locusDetail");let pinned=false;
+const showLocus=on=>{detail.hidden=!on;lbtn.setAttribute("aria-expanded",String(on));};
+lbtn.addEventListener("click",()=>{pinned=!pinned;showLocus(pinned);});
+lbtn.addEventListener("pointerenter",e=>{if(e.pointerType==="mouse")showLocus(true);});
+lbtn.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse"&&!pinned)showLocus(false);});
+})();
+
+/* ---------- Try it: barcode playground (illustrative) ---------- */
+(()=>{
+const svg=document.getElementById("pgSvg");if(!svg)return;
+const NSs="http://www.w3.org/2000/svg";
+const mk=(n,a,p)=>{const e=document.createElementNS(NSs,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+const GOLD="#F2C14E",GREEN="#2FAE6E",MINT="#6FE3A8",SLATE="#3A5546",IVORY="#F3EBCF";
+/* six candidate regions with fixed illustrative properties; diag/dist are per grouping (A pathogen vs others, B race 1 vs race 4) */
+const REG=[
+  {id:"R1",len:420, gc:52,rep:3, anc:38,diag:{A:4,B:0},dist:{A:6,B:0}},
+  {id:"R2",len:180, gc:47,rep:2, anc:42,diag:{A:0,B:3},dist:{A:0,B:3}},
+  {id:"R3",len:950, gc:58,rep:4, anc:31,diag:{A:0,B:0},dist:{A:0,B:0}},
+  {id:"R4",len:1240,gc:64,rep:6, anc:45,diag:{A:2,B:0},dist:{A:2,B:0}},
+  {id:"R5",len:610, gc:44,rep:12,anc:36,diag:{A:0,B:5},dist:{A:0,B:7}},
+  {id:"R6",len:2600,gc:49,rep:5, anc:28,diag:{A:0,B:0},dist:{A:0,B:0}}];
+// path of each genome (rows) through each region (columns): 0 upper, 1 middle, 2 lower.
+const T=[[0,0,0,0,0,0],[0,0,0,0,0,1],[0,1,0,0,2,1],[2,2,0,1,2,2],[2,2,2,2,1,2],[2,2,2,1,1,2]];
+const GROUPS={
+  A:{label:"pathogen vs others",role:["t","t","t","o","o","o"],tag:["pathogen","pathogen","pathogen","other","other","other"]},
+  B:{label:"race 1 vs race 4",role:["t","t","o","x","x","x"],tag:["race 1","race 1","race 4","not compared","not compared","not compared"]}};
+const specific=(r,g)=>{const R=GROUPS[g].role,tg=[],ot=[];R.forEach((ro,gi)=>{if(ro==="t")tg.push(T[gi][r]);else if(ro==="o")ot.push(T[gi][r]);});
+  return tg.every(v=>v===tg[0])&&!ot.includes(tg[0]);};
+
+/* geometry: anchors 150 apart so each region (and its barcode highlight) has room */
+const AX=[30,180,330,480,630,780,930],AW=56,CY=250,TY=[CY-110,CY,CY+110];
+const lane=gi=>{const o=(gi-2.5)*5;let d=`M 0 ${CY+o} L ${AX[0]} ${CY+o} L ${AX[0]+AW} ${CY+o}`;
+  for(let r=0;r<6;r++){const xa=AX[r]+AW,xb=AX[r+1],y=TY[T[gi][r]]+o,m=14;
+    d+=` C ${xa+m} ${CY+o}, ${xa+m} ${y}, ${xa+2*m} ${y} L ${xb-2*m} ${y} C ${xb-m} ${y}, ${xb-m} ${CY+o}, ${xb} ${CY+o} L ${xb+AW} ${CY+o}`;}
+  return d+` L 1000 ${CY+o}`;};
+const defs=mk("defs",{},svg);
+const glow=mk("filter",{id:"pgGlow",x:"-30%",y:"-30%",width:"160%",height:"160%"},defs);mk("feGaussianBlur",{stdDeviation:"6",result:"b"},glow);
+const fm=mk("feMerge",{},glow);mk("feMergeNode",{in:"b"},fm);mk("feMergeNode",{in:"SourceGraphic"},fm);
+const arw=mk("marker",{id:"pgArw",viewBox:"0 0 10 10",refX:"7",refY:"5",markerWidth:"4",markerHeight:"4",orient:"auto-start-reverse"},defs);mk("path",{d:"M0 0 L10 5 L0 10 z",fill:GOLD},arw);
+const hlG=mk("g",{},svg),boxG=mk("g",{},svg),laneG=mk("g",{},svg),ancG=mk("g",{},svg),tagG=mk("g",{},svg),prG=mk("g",{},svg);
+const boxes=REG.map((R,r)=>{const x=AX[r]+AW+6,w=AX[r+1]-AX[r]-AW-12,cx=x+w/2;
+  // the barcode highlight runs from anchor centre to anchor centre: wider and longer than the region box
+  const hl=mk("rect",{x:AX[r]+AW/2,y:CY-150,width:AX[r+1]-AX[r],height:300,rx:18,class:"pg-hl"},hlG);
+  const g=mk("g",{class:"pg-reg",tabindex:"0",role:"img","data-r":r},boxG);
+  mk("rect",{x,y:88,width:w,height:324,rx:14,class:"pg-box"},g);
+  const id=mk("text",{x:cx,y:440,"text-anchor":"middle",class:"pg-id"},g);id.textContent=R.id;
+  const tg=mk("g",{class:"pg-tag"},tagG);const tr=mk("rect",{x:cx-50,y:34,width:100,height:34,rx:17},tg);const tt=mk("text",{x:cx,y:57,"text-anchor":"middle"},tg);
+  // "barcode #n" label that pops in above the region when it qualifies
+  const bl=mk("g",{class:"pg-bl","aria-hidden":"true"},tagG);
+  mk("rect",{x:cx-66,y:18,width:132,height:40,rx:20},bl);mk("path",{d:`M ${cx-8} 57 L ${cx+8} 57 L ${cx} 68 Z`},bl);
+  const bt=mk("text",{x:cx,y:44,"text-anchor":"middle"},bl);
+  const pr=mk("g",{class:"pg-pr"},prG);
+  mk("path",{d:`M ${AX[r]+6} ${CY-34} H ${AX[r]+AW-10}`,"marker-end":"url(#pgArw)"},pr);
+  mk("path",{d:`M ${AX[r+1]+AW-6} ${CY-34} H ${AX[r+1]+10}`,"marker-end":"url(#pgArw)"},pr);
+  return {g,hl,tg,tr,tt,bl,bt,pr,x,w};});
+const lanes=T.map((_,gi)=>mk("path",{d:lane(gi),class:"pg-lane"},laneG));
+AX.forEach(x=>mk("rect",{x,y:CY-18,width:AW,height:36,rx:10,class:"pg-anc"},ancG));
+const legend=document.getElementById("pgLegend");
+
+/* controls */
+const $=id=>document.getElementById(id);
+const DEF={lenMin:200,lenMax:3000,gcMin:40,gcMax:60,rep:10,anc:30,dia:1,dst:2,grp:"A"};
+const ctl=["lenMin","lenMax","gcMin","gcMax","rep","anc","dia","dst"].reduce((o,k)=>(o[k]=$(k),o),{});
+const grpInputs=[...document.querySelectorAll('#pgPanel input[name="grp"]')];
+function state(){const v=k=>+ctl[k].value;return {lenMin:v("lenMin"),lenMax:v("lenMax"),gcMin:v("gcMin"),gcMax:v("gcMax"),rep:v("rep"),anc:v("anc"),dia:v("dia"),dst:v("dst"),grp:(grpInputs.find(i=>i.checked)||{}).value||"A"};}
+function judge(R,r,s){
+  if(R.len<s.lenMin)return["rej","too short"];if(R.len>s.lenMax)return["rej","too long"];
+  if(R.gc<s.gcMin||R.gc>s.gcMax)return["rej","GC"];if(R.rep>s.rep)return["rej","repeats"];if(R.anc<s.anc)return["rej","anchor"];
+  if(!specific(r,s.grp))return["rej","not specific"];
+  if(R.diag[s.grp]<s.dia)return["cand","few positions"];if(R.dist[s.grp]<s.dst)return["cand","too close"];
+  return["bar","barcode"];}
+const list=$("pgList"),empty=$("pgEmpty"),sum=$("pgSum");const items={};
+function render(){const s=state();
+  $("oLen").textContent=`${s.lenMin.toLocaleString()} to ${s.lenMax.toLocaleString()} bp`;$("oGc").textContent=`${s.gcMin} to ${s.gcMax}%`;
+  $("oRep").textContent=`${s.rep}%`;$("oAnc").textContent=`${s.anc} bp`;$("oDia").textContent=`${s.dia}`;$("oDst").textContent=`${s.dst} bases`;
+  const G=GROUPS[s.grp];
+  lanes.forEach((p,gi)=>{const ro=G.role[gi];p.setAttribute("stroke",ro==="t"?GOLD:ro==="o"?GREEN:SLATE);p.classList.toggle("t",ro==="t");});
+  legend.innerHTML=G.role.map((ro,gi)=>`<span class="${ro}"><i></i>Genome ${gi+1}<em>${G.tag[gi]}</em></span>`).join("");
+  const res=REG.map((R,r)=>{const [st,why]=judge(R,r,s);return {R,r,st,why};});
+  const bars=res.filter(x=>x.st==="bar").sort((a,b)=>(b.R.diag[s.grp]-a.R.diag[s.grp])||(b.R.dist[s.grp]-a.R.dist[s.grp])||(a.R.len-b.R.len));
+  const rank={};bars.forEach((b,i)=>rank[b.R.id]=i+1);
+  res.forEach(({R,r,st,why})=>{const b=boxes[r];
+    b.g.setAttribute("class","pg-reg "+st);b.tg.setAttribute("class","pg-tag "+st);b.tt.textContent=why;
+    b.hl.setAttribute("class","pg-hl"+(st==="bar"?" on":""));
+    b.bl.setAttribute("class","pg-bl"+(st==="bar"?" on":""));if(st==="bar")b.bt.textContent=`barcode #${rank[R.id]}`;
+    const w=Math.min(146,Math.max(70,why.length*10.5+22));b.tr.setAttribute("x",b.x+b.w/2-w/2);b.tr.setAttribute("width",w);
+    b.pr.setAttribute("class","pg-pr"+(st==="bar"?" on":""));
+    b.g.setAttribute("aria-label",`${R.id}: ${R.len} bp, GC ${R.gc}%, repeats ${R.rep}%, anchors ${R.anc} bp, ${specific(r,s.grp)?"target group shares a path":"targets do not share a path"}; ${st==="bar"?"barcode #"+rank[R.id]:st==="cand"?"candidate, "+why:"rejected, "+why}`);});
+  const nC=res.filter(x=>x.st==="cand").length,nR=res.filter(x=>x.st==="rej").length;
+  sum.textContent=`${bars.length} barcode${bars.length===1?"":"s"}, ${nC} candidate${nC===1?"":"s"}, ${nR} rejected`;
+  // ranked list with FLIP reordering
+  const first={};Object.values(items).forEach(li=>{if(li.isConnected)first[li.dataset.id]=li.getBoundingClientRect().top;});
+  const keep=new Set(bars.map(b=>b.R.id));
+  Object.keys(items).forEach(id=>{if(!keep.has(id)&&items[id].isConnected)items[id].remove();});
+  bars.forEach((b,i)=>{let li=items[b.R.id];if(!li){li=document.createElement("li");li.dataset.id=b.R.id;items[b.R.id]=li;}
+    li.innerHTML=`<span class="rk">${i+1}</span><b>barcode #${i+1} · ${b.R.id}</b><span>${b.R.len.toLocaleString()} bp</span><span>${b.R.diag[s.grp]} diagnostic positions</span><span>closest strain ${b.R.dist[s.grp]} bases away</span>`;
+    list.appendChild(li);});
+  empty.hidden=bars.length>0;
+  if(!reduce)bars.forEach(b=>{const li=items[b.R.id],f=first[b.R.id],l=li.getBoundingClientRect().top;
+    if(f==null){li.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"none"}],{duration:420,easing:"cubic-bezier(0.22,1,0.36,1)"});}
+    else if(Math.abs(f-l)>1){li.animate([{transform:`translateY(${f-l}px)`},{transform:"none"}],{duration:500,easing:"cubic-bezier(0.22,1,0.36,1)"});}});
+}
+function pair(a,b,gap){ctl[a].addEventListener("input",()=>{if(+ctl[a].value>+ctl[b].value-gap)ctl[a].value=+ctl[b].value-gap;render();});
+  ctl[b].addEventListener("input",()=>{if(+ctl[b].value<+ctl[a].value+gap)ctl[b].value=+ctl[a].value+gap;render();});}
+pair("lenMin","lenMax",50);pair("gcMin","gcMax",2);
+["rep","anc","dia","dst"].forEach(k=>ctl[k].addEventListener("input",render));
+grpInputs.forEach(i=>i.addEventListener("change",render));
+$("pgReset").addEventListener("click",()=>{Object.keys(ctl).forEach(k=>ctl[k].value=DEF[k]);grpInputs.forEach(i=>i.checked=i.value===DEF.grp);render();});
+// hovering or focusing a region shows its properties in the summary line
+boxes.forEach((b,r)=>{const show=()=>{const s=state(),R=REG[r];sum.textContent=`${R.id}: ${R.len.toLocaleString()} bp · GC ${R.gc}% · repeats ${R.rep}% · anchors ${R.anc} bp · ${R.diag[s.grp]} diagnostic positions · closest strain ${R.dist[s.grp]} bases · ${specific(r,s.grp)?"target group shares a path":"targets don't share a path"}`;};
+  b.g.addEventListener("pointerenter",show);b.g.addEventListener("focus",show);b.g.addEventListener("pointerleave",render);b.g.addEventListener("blur",render);});
+render();
+})();
+
+/* ---------- hero teaser (optional background clip; off with reduced motion, paused while a section is open) ---------- */
+(()=>{const v=document.getElementById("heroTeaser");if(!v)return;
+  if(reduce){v.remove();return;}
+  v.src="assets/panbarcode_teaser.mp4";v.autoplay=true;
+  v.addEventListener("playing",()=>v.classList.add("on"),{once:true});
+  const p=v.play();if(p&&p.catch)p.catch(()=>{});
+  new MutationObserver(()=>{if(document.body.classList.contains("open"))v.pause();else{const q=v.play();if(q&&q.catch)q.catch(()=>{});}}).observe(document.body,{attributes:true,attributeFilter:["class"]});})();
+
+/* ================= helix navigation ================= */
+/* The 3D scene lives in the module script at the end of the page. This part owns the sections and the sheet. */
+(()=>{
+const sections=[
+ {t:"Watch",s:"the 2 minute explainer"},{t:"Try it",s:"barcode playground"},{t:"Case study",s:"lettuce wilt"},
+ {t:"Library",s:"barcodes per group"},{t:"Get the code",s:"run it on your genomes"},{t:"Author",s:"the person behind it"}];
+const N=sections.length;let sel=-1;
+const list=document.getElementById("srNav");
+const loops=sections.map((s,i)=>{const li=document.createElement("li");const b=document.createElement("button");
+  b.type="button";b.className="loop-btn";
+  b.innerHTML=`<span class="n" aria-hidden="true">${String(i+1).padStart(2,"0")}</span><span>${s.t}</span>`;
+  b.setAttribute("aria-label",`${s.t}: ${s.s}`);b.addEventListener("click",()=>openSec(i));li.appendChild(b);list.appendChild(li);return {g:b};});
+window.PB={sections,open:(i,from)=>{openSec(i);if(from)lastFocus=from;},isOpen:()=>sel>=0};
+/* sheet */
+const sheet=document.getElementById("sheet"),secs=[...document.querySelectorAll(".sec")];
+let lastFocus=null;
+const vid=document.getElementById("explainer"),vbox=document.getElementById("vbox"),sheetBody=sheet.querySelector(".sheet-body");
+// the video box gets the exact height the sheet leaves free (header, padding and the cards under it are measured, not guessed)
+const watchCards=document.getElementById("watchCards");
+function fitVideo(){if(sheet.hidden)return;const cs=getComputedStyle(sheetBody);let avail=sheetBody.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
+  if(watchCards&&sel===0&&innerWidth>760)avail-=watchCards.offsetHeight+parseFloat(getComputedStyle(watchCards).marginTop);
+  vbox.style.setProperty("--chrome",Math.max(0,innerHeight-avail)+"px");}
+addEventListener("resize",fitVideo);
+function openSec(i){if(sel===0&&i!==0&&vid)vid.pause();sel=i;lastFocus=loops[i].g;document.body.classList.add("open");
+  document.getElementById("sKick").textContent=String(i+1).padStart(2,"0")+" · "+sections[i].s;
+  document.getElementById("sTitle").textContent=sections[i].t;
+  secs.forEach(s=>s.classList.toggle("on",+s.dataset.sec===i));
+  sheet.hidden=false;requestAnimationFrame(()=>sheet.classList.add("on"));
+  document.getElementById("head").style.opacity=0;document.getElementById("hint").style.opacity=0;
+  sheet.querySelector(".sheet-body").scrollTop=0;fitVideo();requestAnimationFrame(fitVideo);document.getElementById("sClose").focus();}
+function closeSec(){sheet.classList.remove("on");document.body.classList.remove("open");sel=-1;
+  document.getElementById("head").style.opacity=1;document.getElementById("hint").style.opacity=1;
+  setTimeout(()=>{sheet.hidden=true;},reduce?0:420);if(lastFocus)lastFocus.focus();
+  if(vid)vid.pause();}
+document.getElementById("sClose").onclick=closeSec;
+document.getElementById("sNext").onclick=()=>openSec((sel+1)%N);
+document.getElementById("sPrev").onclick=()=>openSec((sel-1+N)%N);
+addEventListener("keydown",e=>{if(e.key==="Escape"&&sel>=0&&!document.querySelector("dialog[open]"))closeSec();});
+})();
+
+</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+/* ================= 3D helix scene ================= */
+import * as THREE from "three";
+import {EffectComposer} from "three/addons/postprocessing/EffectComposer.js";
+import {RenderPass} from "three/addons/postprocessing/RenderPass.js";
+import {UnrealBloomPass} from "three/addons/postprocessing/UnrealBloomPass.js";
+import {OutputPass} from "three/addons/postprocessing/OutputPass.js";
+
+const PB=window.PB, reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const cv=document.getElementById("helix"), labelLayer=document.getElementById("floatLabels");
+let renderer;
+try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:"high-performance"});}
+catch(e){document.documentElement.classList.add("no-webgl");throw e;}
+renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.86;
+
+/* ---------- scene, camera, light ---------- */
+const BG=new THREE.Color("#040D08");
+const scene=new THREE.Scene();scene.background=BG;scene.fog=new THREE.FogExp2(BG,0.03);
+const camera=new THREE.PerspectiveCamera(34,1,0.1,300);camera.position.set(0,0,26);
+scene.add(new THREE.HemisphereLight(0xffe6a8,0x020a05,0.55));
+const key=new THREE.DirectionalLight(0xfff4dc,2.2);key.position.set(-8,12,14);scene.add(key);
+const rimBlue=new THREE.PointLight(0x1fbf74,140,70,1.5);rimBlue.position.set(10,-6,6);scene.add(rimBlue);
+const rimCyan=new THREE.PointLight(0xffc85a,110,60,1.5);rimCyan.position.set(-12,5,5);scene.add(rimCyan);
+
+/* ---------- helix model ---------- */
+const R=2.2, P=9.2, L=78, OFF=Math.PI*0.78, PER_TURN=10;      // radius, pitch, length, groove offset, base pairs per turn
+const root=new THREE.Group();scene.add(root);
+const spin=new THREE.Group();root.add(spin);
+class Helix extends THREE.Curve{constructor(o,len){super();this.o=o;this.len=len;}
+  getPoint(t,v=new THREE.Vector3()){const x=-this.len/2+t*this.len,th=2*Math.PI*x/P+this.o;return v.set(x,R*Math.cos(th),R*Math.sin(th));}}
+const strandPt=(x,o)=>{const th=2*Math.PI*x/P+o;return new THREE.Vector3(x,R*Math.cos(th),R*Math.sin(th));};
+
+const C_A=new THREE.Color("#22B573"), C_B=new THREE.Color("#D9A23A");
+function strandMat(c,em){return new THREE.MeshPhysicalMaterial({color:c,emissive:em,emissiveIntensity:0.4,roughness:0.16,metalness:0.15,clearcoat:1,clearcoatRoughness:0.08,sheen:0.6,sheenColor:new THREE.Color("#fff1c9")});}
+function buildHelix(len,quality){
+  const g=new THREE.Group();const segs=Math.round(len/P*(quality?140:60));
+  [[0,C_A,"#0E8F55"],[OFF,C_B,"#8A5A10"]].forEach(([o,c,em])=>{
+    const curve=new Helix(o,len);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(curve,segs,0.2,quality?18:8,false),strandMat(c,new THREE.Color(em))));
+    // soft outer halo around each strand
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(curve,Math.round(segs/2),0.55,10,false),
+      new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:quality?0.07:0.05,blending:THREE.AdditiveBlending,depthWrite:false})));});
+  return g;}
+spin.add(buildHelix(L,true));
+
+/* base pairs: two coloured halves per rung, a glossy nucleotide bead at each end, a bright spark inside each bead */
+const nR=Math.floor(L/P*PER_TURN), rs=P/PER_TURN;
+const BASES="ATGCCAGTTAGCGGATCCTTCGAACTGACTGGATCAGTAC",PAIR={A:"T",T:"A",G:"C",C:"G"};
+const BC={A:new THREE.Color("#1E9E62"),T:new THREE.Color("#F7DC8B"),G:new THREE.Color("#BFE8C9"),C:new THREE.Color("#E0A93B")};
+const rungGeo=new THREE.CylinderGeometry(0.1,0.1,1,14,1,false);
+const rungs=new THREE.InstancedMesh(rungGeo,new THREE.MeshStandardMaterial({roughness:0.3,metalness:0.1,emissive:0x0b3a22,emissiveIntensity:0.7}),nR*2);
+const beads=new THREE.InstancedMesh(new THREE.SphereGeometry(0.3,28,18),new THREE.MeshPhysicalMaterial({color:0xf6e7b8,roughness:0.1,clearcoat:1,emissive:0x8a5a00,emissiveIntensity:0.35}),nR*2);
+const sparks=new THREE.InstancedMesh(new THREE.SphereGeometry(0.14,12,8),new THREE.MeshBasicMaterial({toneMapped:false}),nR*2);
+const beadX=[];const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),UP=new THREE.Vector3(0,1,0);
+for(let j=0;j<nR;j++){const x=-L/2+rs*(j+0.5);const a=strandPt(x,0),b=strandPt(x,OFF);
+  const ch=BASES[j%BASES.length],mid=a.clone().add(b).multiplyScalar(0.5);
+  [[a,mid,BC[ch]],[mid,b,BC[PAIR[ch]]]].forEach(([p,q,c],h)=>{const d=q.clone().sub(p);const len=d.length();
+    Q.setFromUnitVectors(UP,d.normalize());M.compose(p.clone().add(q).multiplyScalar(0.5),Q,S.set(1,len*0.92,1));
+    rungs.setMatrixAt(j*2+h,M);rungs.setColorAt(j*2+h,c);});
+  [a,b].forEach((p,h)=>{M.compose(p,Q.identity(),S.set(1,1,1));beads.setMatrixAt(j*2+h,M);sparks.setMatrixAt(j*2+h,M);
+    sparks.setColorAt(j*2+h,h?C_B:C_A);beadX.push(x);});}
+spin.add(rungs,beads,sparks);
+
+/* faint helices further back, out of focus through fog, like the depth in the reference image */
+const back=[];
+[[-10,-11,-26,0.9,0.5],[22,-5,-38,1.1,-0.4],[14,13,-52,1,0.25]].forEach(([x,y,z,s,rz])=>{
+  const outer=new THREE.Group();outer.position.set(x,y,z);outer.scale.setScalar(s);outer.rotation.set(0.2,0.5,rz);
+  const inner=buildHelix(70,false);outer.add(inner);scene.add(outer);back.push(inner);});
+
+/* ---------- particles ---------- */
+const spriteVS=`uniform float uTime,uPR,uFlow;attribute float aSize,aSeed;varying float vA;varying vec3 vC;
+void main(){vec3 p=position;p.x=mod(p.x-uTime*uFlow*(0.2+aSeed*0.6)+60.0,120.0)-60.0;
+p.y+=sin(uTime*0.25+aSeed*31.0)*0.8;p.z+=cos(uTime*0.2+aSeed*17.0)*0.6;
+vec4 mv=modelViewMatrix*vec4(p,1.0);gl_Position=projectionMatrix*mv;gl_PointSize=aSize*uPR*(60.0/-mv.z);
+vA=(0.55+0.45*sin(uTime*(0.8+aSeed*2.2)+aSeed*40.0))*clamp(1.0-(-mv.z-12.0)/80.0,0.12,1.0);
+vC=mix(vec3(1.0,0.76,0.32),vec3(0.75,1.0,0.85),fract(aSeed*7.0));}`;
+const spriteFS=`uniform float uSoft,uGain;varying float vA;varying vec3 vC;
+void main(){float d=length(gl_PointCoord-0.5);float core=smoothstep(0.5,0.0,d);float a=pow(core,uSoft);if(a<0.01)discard;gl_FragColor=vec4(vC*uGain,a*vA);}`;
+function field(n,box,size,soft,gain,flow){const g=new THREE.BufferGeometry(),pos=new Float32Array(n*3),sz=new Float32Array(n),sd=new Float32Array(n);
+  for(let i=0;i<n;i++){pos[i*3]=(Math.random()-.5)*box[0];pos[i*3+1]=(Math.random()-.5)*box[1];pos[i*3+2]=box[2]+Math.random()*box[3];
+    sz[i]=size[0]+Math.pow(Math.random(),2.2)*(size[1]-size[0]);sd[i]=Math.random();}
+  g.setAttribute("position",new THREE.BufferAttribute(pos,3));g.setAttribute("aSize",new THREE.BufferAttribute(sz,1));g.setAttribute("aSeed",new THREE.BufferAttribute(sd,1));
+  const m=new THREE.ShaderMaterial({uniforms:{uTime:{value:0},uPR:{value:renderer.getPixelRatio()},uSoft:{value:soft},uGain:{value:gain},uFlow:{value:flow}},
+    vertexShader:spriteVS,fragmentShader:spriteFS,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+  const p=new THREE.Points(g,m);p.frustumCulled=false;scene.add(p);return m;}
+const dust=field(1100,[120,60,-60,62],[0.8,2.6],2.2,0.85,1.0);      // fine molecules everywhere
+const bokeh=field(36,[90,50,-40,50],[18,44],1.4,0.22,0.35);           // big soft out-of-focus dots
+
+/* molecules peeling away from the helix: born near the strands, they orbit the axis and drift outward, then fade */
+const orbVS=`uniform float uTime,uPR,uSpin;attribute float aX,aA,aSeed;varying float vA;varying vec3 vC;
+void main(){float life=7.0+aSeed*5.0;float k=fract(uTime/life+aSeed);
+float r=${R.toFixed(2)}*(1.05+2.2*(1.0-pow(1.0-k,2.0)));float ang=aA+uSpin*(0.85+0.15*aSeed)+k*2.4*(aSeed>0.5?1.0:-1.0);
+vec3 p=vec3(aX-k*3.0,r*cos(ang),r*sin(ang));
+vec4 mv=modelViewMatrix*vec4(p,1.0);gl_Position=projectionMatrix*mv;gl_PointSize=(1.0+1.6*fract(aSeed*13.0))*uPR*(60.0/-mv.z);
+vA=smoothstep(0.0,0.08,k)*(1.0-smoothstep(0.55,1.0,k));vC=mix(vec3(1.0,0.8,0.35),vec3(0.8,1.0,0.88),fract(aSeed*5.0));}`;
+const orbN=520,og=new THREE.BufferGeometry(),oX=new Float32Array(orbN),oA=new Float32Array(orbN),oS=new Float32Array(orbN);
+for(let i=0;i<orbN;i++){oX[i]=(Math.random()-.5)*L;oS[i]=Math.random();oA[i]=2*Math.PI*oX[i]/P+(Math.random()<0.5?0:OFF)+(Math.random()-.5)*0.3;}
+og.setAttribute("position",new THREE.BufferAttribute(new Float32Array(orbN*3),3));
+og.setAttribute("aX",new THREE.BufferAttribute(oX,1));og.setAttribute("aA",new THREE.BufferAttribute(oA,1));og.setAttribute("aSeed",new THREE.BufferAttribute(oS,1));
+const orbMat=new THREE.ShaderMaterial({uniforms:{uTime:{value:0},uPR:{value:renderer.getPixelRatio()},uSpin:{value:0},uSoft:{value:2.0},uGain:{value:1.1}},
+  vertexShader:orbVS,fragmentShader:spriteFS,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+const orbs=new THREE.Points(og,orbMat);orbs.frustumCulled=false;root.add(orbs);
+
+/* ---------- glow ---------- */
+const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(1,1),0.7,0.45,0.5);composer.addPass(bloom);composer.addPass(new OutputPass());
+
+/* ---------- layout ---------- */
+let W=0,H=0,vertical=false,camZ=26;
+function layout(){W=innerWidth;H=innerHeight;if(!W||!H)return;vertical=W<760;
+  renderer.setSize(W,H,false);composer.setSize(W,H);bloom.setSize(W,H);camera.aspect=W/H;
+  if(vertical){camera.fov=46;camZ=26;camera.position.set(0,0,camZ);root.rotation.set(-0.5,0.0,Math.PI/2-0.1);root.position.set(0.2,-3.2,0);bloom.strength=0.6;}
+  else{camera.fov=34;camZ=22;camera.position.set(0,0,camZ);root.rotation.set(0.12,0.46,0.06);root.position.set(1.0,-1.4,0);bloom.strength=0.68;}
+  camera.updateProjectionMatrix();
+  [dust,bokeh,orbMat].forEach(m=>m.uniforms.uPR.value=renderer.getPixelRatio());}
+addEventListener("resize",layout);layout();
+
+/* ---------- section molecules orbiting the helix ---------- */
+// Each section is a small molecule (gold core, 2-4 bonded atoms) on its own slow orbit around the helix axis.
+// Its label floats beside it and stays upright, so it is always readable; hover pauses, click opens.
+const molGroup=new THREE.Group();root.add(molGroup);
+const coreGeo=new THREE.SphereGeometry(0.52,40,24),satGeo=new THREE.SphereGeometry(0.23,24,16),bondGeo=new THREE.CylinderGeometry(0.075,0.075,1,12),haloGeo=new THREE.SphereGeometry(1.05,32,20),ringGeo=new THREE.RingGeometry(1.0,1.045,72);
+// molecules draw on top of the helix (no depth test) so the DNA can never hide a section
+const ON_TOP={transparent:true,depthTest:false,depthWrite:false};
+const bondMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xd9c38a,emissiveIntensity:0.25,roughness:0.3,...ON_TOP});
+const UPV=new THREE.Vector3(0,1,0);
+let hoverI=-1,rayHover=-1;
+const MOLS=PB.sections.map((sec,i)=>{
+  const g=new THREE.Group();
+  const core=new THREE.Mesh(coreGeo,new THREE.MeshPhysicalMaterial({color:0xffffff,emissive:0xfff1cc,emissiveIntensity:0.32,roughness:0.08,metalness:0,clearcoat:1,clearcoatRoughness:0.05,...ON_TOP}));
+  core.userData.i=i;g.add(core);
+  const halo=new THREE.Mesh(haloGeo,new THREE.MeshBasicMaterial({color:0xfff1cc,opacity:0.08,blending:THREE.AdditiveBlending,...ON_TOP}));g.add(halo);
+  const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xfff4d6,opacity:0.5,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,...ON_TOP}));ring.renderOrder=11;molGroup.add(ring);
+  const nSat=2+(i%3);
+  for(let k=0;k<nSat;k++){const ph=i*1.3+k*(2*Math.PI/nSat);const dir=new THREE.Vector3(Math.cos(ph)*0.8,Math.sin(ph)*0.8,((k%2)?0.6:-0.6)).normalize();
+    const p=dir.clone().multiplyScalar(0.85);
+    const sat=new THREE.Mesh(satGeo,new THREE.MeshPhysicalMaterial({color:0xfff8e6,emissive:0xF2C14E,emissiveIntensity:0.3,roughness:0.12,clearcoat:1,...ON_TOP}));sat.position.copy(p);g.add(sat);
+    const bond=new THREE.Mesh(bondGeo,bondMat);bond.position.copy(p).multiplyScalar(0.5);bond.quaternion.setFromUnitVectors(UPV,dir);bond.scale.set(1,0.98,1);g.add(bond);}
+  g.traverse(o=>{if(o.isMesh)o.renderOrder=10;});molGroup.add(g);
+  const b=document.createElement("button");b.type="button";b.className="mol-btn";b.tabIndex=-1;
+  b.innerHTML=`<span class="n" aria-hidden="true">${String(i+1).padStart(2,"0")}</span><span>${sec.t}</span><span class="s" aria-hidden="true">${sec.s}</span>`;
+  b.setAttribute("aria-label",`${sec.t}: ${sec.s}`);
+  b.addEventListener("pointerenter",()=>hoverI=i);b.addEventListener("pointerleave",()=>{if(hoverI===i)hoverI=-1;});
+  b.addEventListener("click",()=>PB.open(i,b));labelLayer.appendChild(b);
+  return {g,core,halo,ring,b,i,a0:i*2.39+0.4,w:0.15+0.035*(i%3),rr:R*1.55+(i%2)*0.35,ph:i*1.7,glow:0};});
+function molX(i){return vertical?(-5.6+i*2.55):(-9+i*3.8);}
+const V=new THREE.Vector3(),A=new THREE.Vector3(),camPos=new THREE.Vector3();
+const ray=new THREE.Raycaster(),ptr=new THREE.Vector2(9,9);let ptrIn=false;
+cv.style.pointerEvents="auto";
+addEventListener("pointermove",e=>{ptr.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ptrIn=true;},{passive:true});
+cv.addEventListener("click",()=>{if(rayHover>=0&&!PB.isOpen())PB.open(rayHover,MOLS[rayHover].b);});
+const qRootInv=new THREE.Quaternion();
+function placeMolecules(t){
+  root.updateMatrixWorld();camera.updateMatrixWorld();camera.getWorldPosition(camPos);root.getWorldQuaternion(qRootInv).invert();
+  MOLS.forEach(m=>{const th=m.a0+m.w*t;const x=molX(m.i)+1.1*Math.sin(0.11*t+m.ph);
+    m.g.position.set(x,m.rr*0.85*Math.cos(th),m.rr*0.55*Math.sin(th));   // flattened orbit: never too close to the camera, never into the page chrome
+    m.g.rotation.set(t*0.35+m.ph,t*0.5+m.i,0);                 // the molecule tumbles slowly as it orbits
+    const on=(hoverI===m.i||rayHover===m.i)&&!PB.isOpen();m.glow+=((on?1:0)-m.glow)*0.15;
+    m.core.material.emissiveIntensity=0.32+0.9*m.glow;m.halo.material.opacity=0.08+0.22*m.glow;m.g.scale.setScalar(1+0.2*m.glow);
+    // a soft ring expands from each molecule: "this is clickable"; it faces the camera and stays bright on hover
+    const k=reduce?0.15:((t*0.42+m.i*0.37)%1);m.ring.position.copy(m.g.position);m.ring.quaternion.copy(qRootInv).multiply(camera.quaternion);
+    m.ring.scale.setScalar(1.05+0.55*k+0.15*m.glow);m.ring.material.opacity=on?0.7:(reduce?0.32:0.45*(1-k));});
+  // hover by pointing at the molecule itself
+  rayHover=-1;if(ptrIn&&!PB.isOpen()){ray.setFromCamera(ptr,camera);const hit=ray.intersectObjects(MOLS.map(m=>m.core),false)[0];if(hit)rayHover=hit.object.userData.i;}
+  cv.style.cursor=rayHover>=0?"pointer":"";
+  MOLS.forEach(m=>{m.g.getWorldPosition(V);const dist=V.distanceTo(camPos);
+    A.set(m.g.position.x,0,0).applyMatrix4(root.matrixWorld);const behind=dist>A.distanceTo(camPos);   // on the far side of the helix
+    V.project(camera);const sx=(V.x*0.5+0.5)*W,sy=(-V.y*0.5+0.5)*H;
+    const m0=vertical?H:W,pos=vertical?sy:sx,lo=vertical?0.27:0.03;
+    const edge=Math.min(1,Math.max(0,(pos-m0*lo)/(m0*0.06)),Math.max(0,(m0*0.97-pos)/(m0*0.06)));
+    const sc=Math.min(1.1,Math.max(0.75,24/dist));const a=edge*(behind?0.88:1);
+    const off=(vertical?18:26)*sc+18;const bw=m.b.offsetWidth*sc;
+    const flip=sx+off+bw>W-12;                                 // no room on the right: sit on the molecule's left
+    m.b.classList.toggle("flip",flip);
+    const lx=flip?sx-off-bw:sx+off;
+    m.b.style.transform=`translate(${Math.max(8,lx).toFixed(1)}px,${sy.toFixed(1)}px) translateY(-50%) scale(${sc.toFixed(3)})`;
+    m.b.style.opacity=a.toFixed(3);m.b.style.zIndex=String(behind?10:1000-Math.round(dist*10));
+    m.b.style.pointerEvents=a>0.4?"auto":"none";m.b.classList.toggle("is-hot",(hoverI===m.i||rayHover===m.i));});}
+
+/* ---------- light pulses running along the strands ---------- */
+const sparkBase=[];for(let i=0;i<nR*2;i++)sparkBase.push(i%2?C_B.clone():C_A.clone());
+const tmp=new THREE.Color();
+function pulses(t){const span=L+20;const p1=L/2+10-((t*7)%span),p2=L/2+10-((t*7+span/2)%span);
+  for(let i=0;i<nR*2;i++){const x=beadX[i];const g=Math.exp(-Math.pow(x-p1,2)/3)+Math.exp(-Math.pow(x-p2,2)/3);
+    const tw=0.75+0.25*Math.sin(t*2.3+i*1.7);tmp.copy(sparkBase[i]).multiplyScalar(1.2*tw+5*g);sparks.setColorAt(i,tmp);}
+  sparks.instanceColor.needsUpdate=true;}
+
+/* ---------- motion: always on (gentler with reduce motion), with a pause control ---------- */
+const motionBtn=document.getElementById("motionBtn");
+let paused=false;try{paused=localStorage.getItem("pb-motion")==="off";}catch(e){}
+const setMotionBtn=()=>{motionBtn.setAttribute("aria-pressed",String(paused));motionBtn.querySelector("span").textContent=paused?"Play motion":"Pause motion";motionBtn.classList.toggle("is-paused",paused);};
+setMotionBtn();motionBtn.addEventListener("click",()=>{paused=!paused;setMotionBtn();try{localStorage.setItem("pb-motion",paused?"off":"on");}catch(e){}});
+const GENTLE=reduce?0.45:1;
+
+/* ---------- loop ---------- */
+let s=0,speed=1,last=performance.now(),T=0,mx=0,my=0,tx=0,ty=0,intro=reduce?1:0,shown=false;
+addEventListener("pointermove",e=>{mx=e.clientX/innerWidth-0.5;my=e.clientY/innerHeight-0.5;},{passive:true});
+const OMEGA=0.42;   // rad/s: one loop passes every ~7.5 s
+function tick(now){
+  if(innerWidth!==W||innerHeight!==H)layout();
+  if(!W||!H)return;
+  const dt=Math.min(0.05,Math.max(0,(now-last)/1000));last=now;
+  const hovering=hoverI>=0||rayHover>=0;
+  const target=(hovering||PB.isOpen()||paused)?0:1;speed+=(target-speed)*Math.min(1,dt*3.2);
+  intro=Math.min(1,intro+dt/2.6);const ei=1-Math.pow(1-intro,3);
+  const k=speed*GENTLE*dt;
+  s+=OMEGA*k*(1+(reduce?0:2.2*(1-ei)));T+=k;
+  spin.rotation.x=s;back.forEach((b,j)=>b.rotation.x=s*(0.6+0.15*j));
+  tx+=(mx-tx)*0.04;ty+=(my-ty)*0.04;camera.position.x=tx*1.6;camera.position.y=-ty*1.0;camera.position.z=camZ+8*(1-ei);camera.lookAt(0,0,0);
+  labelLayer.style.opacity=PB.isOpen()?"0":String(Math.max(0,(intro-0.35)/0.65));
+  dust.uniforms.uTime.value=T;bokeh.uniforms.uTime.value=T;orbMat.uniforms.uTime.value=T;orbMat.uniforms.uSpin.value=s;
+  pulses(T);placeMolecules(T);composer.render();
+  if(!shown){shown=true;requestAnimationFrame(()=>cv.classList.add("ready"));}}
+renderer.setAnimationLoop(tick);
+document.addEventListener("visibilitychange",()=>{last=performance.now();});
+</script>
+</body>
+</html>
